@@ -15,10 +15,19 @@ from typing import Tuple
 from rgb_palette import RGB_UNIVERSAL_COLORS, ColorInfo as ColorInfoRGB
 
 app = Flask(__name__)
-CORS(app, 
-     origins=["https://miyuki-pattern-generator.vercel.app", "http://localhost:3000"],
-     allow_headers=["Content-Type"],
-     methods=["GET", "POST", "OPTIONS"])
+
+# Configurar CORS para permitir requests desde Vercel
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://miyuki-frontend.vercel.app",  # Tu dominio de Vercel
+            "https://miyuki-frontend-*.vercel.app",  # Preview deploys
+            "http://localhost:3000",  # Para desarrollo local
+            "http://127.0.0.1:5000"
+        ]
+    }
+})
+ 
 
 # ============================================================================
 # MIYUKI COLOR PALETTE - Estructura Expandida con Todos los Campos
