@@ -835,11 +835,8 @@ def create_peyote_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, 
             x2 = x1 + cell_size
             y2 = y1 + cell_size
             
-            # Dibujar celda
-            if show_grid:
-                draw.rectangle([x1, y1, x2, y2], fill=color, outline=(200, 200, 200), width=1)
-            else:
-                draw.rectangle([x1, y1, x2, y2], fill=color, outline=None)
+            # Dibujar celda - SIEMPRE con grid en vista de coordenadas
+            draw.rectangle([x1, y1, x2, y2], fill=color, outline=(200, 200, 200), width=1)
             
             # Lógica de contador por color EN LA COLUMNA
             if color != current_color:
@@ -1289,4 +1286,3 @@ if __name__ == '__main__':
     print(f"   - Manual essential colors: {len(MIYUKI_MANUAL_COLORS)}")
     print("=" * 60)
     app.run(debug=True, host='0.0.0.0', port=5000)
-    
