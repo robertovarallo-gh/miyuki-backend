@@ -775,6 +775,13 @@ def create_peyote_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, 
     """Create peyote pattern with coordinate numbers and optional grid (vertical offset)"""
     pixel_width, pixel_height = pattern.size
     
+    print(f"🔍 PEYOTE COORDINATES - Pattern size: {pixel_width}x{pixel_height}")
+    print(f"🔍 PEYOTE COORDINATES - show_grid: {show_grid}, show_numbers: {show_numbers}")
+    
+    # Verificar que el patrón no esté vacío
+    sample_pixels = list(pattern.getdata())[:10]
+    print(f"🔍 PEYOTE COORDINATES - First 10 pixels: {sample_pixels}")
+    
     margin_top = 50
     margin_left = 50
     
@@ -855,6 +862,7 @@ def create_peyote_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, 
                 
                 draw.text((text_x, text_y), text, fill=text_color, font=font)
     
+    print(f"✅ PEYOTE COORDINATES - Generated image: {grid_img.size}")
     return grid_img
 
 def analyze_pattern_colors(pattern: Image.Image, color_mode: str = 'miyuki') -> dict:
@@ -1281,3 +1289,4 @@ if __name__ == '__main__':
     print(f"   - Manual essential colors: {len(MIYUKI_MANUAL_COLORS)}")
     print("=" * 60)
     app.run(debug=True, host='0.0.0.0', port=5000)
+    
