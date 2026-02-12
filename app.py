@@ -673,18 +673,7 @@ def create_peyote_pattern(pattern: Image.Image, cell_size: int = 20, show_grid: 
                 draw.rectangle([x1, y1, x2, y2], fill=color, outline=(200, 200, 200), width=1)
             else:
                 draw.rectangle([x1, y1, x2, y2], fill=color, outline=None)  
-
-    # Al final de create_peyote_pattern, ANTES de return peyote_img
-    pixels_array = list(peyote_img.getdata())
-    cleaned_pixels = []
-    for pixel in pixels_array:
-        if pixel == (200, 200, 200) or pixel == (200, 200, 200, 255):
-            cleaned_pixels.append((255, 255, 255))
-        else:
-            cleaned_pixels.append(pixel)
-
-    peyote_img.putdata(cleaned_pixels)
-    print(f"🧹 Limpiados píxeles grises del grid")
+                
     return peyote_img
 
 def get_contrast_color(rgb_color: Tuple[int, int, int]) -> Tuple[int, int, int]:
