@@ -634,9 +634,9 @@ def create_grid_pattern(pattern: Image.Image, cell_size: int = 20, show_grid: bo
             
             if show_grid:
                 if x == 0 and y == 0:  # Solo log del primer pixel
-                    print(f"🎨 Dibujando grid - outline=(200, 200, 200)")
+                    print(f"🎨 Dibujando grid - outline=(220, 220, 220)")
                 # Draw with grid lines
-                draw.rectangle([x1, y1, x2, y2], fill=color, outline=(200, 200, 200), width=1)
+                draw.rectangle([x1, y1, x2, y2], fill=color, outline=(220, 220, 220), width=1)
             else:
                 # Draw without grid lines
                 draw.rectangle([x1, y1, x2, y2], fill=color, outline=None)
@@ -669,8 +669,8 @@ def create_peyote_pattern(pattern: Image.Image, cell_size: int = 20, show_grid: 
             
             if show_grid:
                 if x == 0 and y == 0:
-                    print(f"🎨 Dibujando peyote VERTICAL - outline=(200, 200, 200)")
-                draw.rectangle([x1, y1, x2, y2], fill=color, outline=(200, 200, 200), width=1)
+                    print(f"🎨 Dibujando peyote VERTICAL - outline=(220, 220, 220)")
+                draw.rectangle([x1, y1, x2, y2], fill=color, outline=(220, 220, 220), width=1)
             else:
                 draw.rectangle([x1, y1, x2, y2], fill=color, outline=None)  
                 
@@ -743,7 +743,7 @@ def create_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, show_gr
             
             # Dibujar celda
             if show_grid:
-                draw.rectangle([x1, y1, x2, y2], fill=color, outline=(200, 200, 200), width=1)
+                draw.rectangle([x1, y1, x2, y2], fill=color, outline=(220, 220, 220), width=1)
             else:
                 draw.rectangle([x1, y1, x2, y2], fill=color, outline=None)
             
@@ -836,7 +836,7 @@ def create_peyote_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, 
             y2 = y1 + cell_size
             
             # Dibujar celda - SIEMPRE con grid en vista de coordenadas
-            draw.rectangle([x1, y1, x2, y2], fill=color, outline=(200, 200, 200), width=1)
+            draw.rectangle([x1, y1, x2, y2], fill=color, outline=(220, 220, 220), width=1)
             
             # Lógica de contador por color EN LA COLUMNA
             if color != current_color:
