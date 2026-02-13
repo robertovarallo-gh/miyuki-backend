@@ -1167,18 +1167,18 @@ def generate_pattern():
             print(f"🎨 Modo EDICIÓN - regenerando con pattern_type={pattern_type}")
             if pattern_type == 'peyote':
                 grid_pattern = create_peyote_pattern(pattern, cell_size=20, show_grid=show_grid)
-                coord_pattern = create_peyote_coordinate_pattern(pattern, cell_size=35, show_grid=show_grid, show_numbers=show_numbers)
+                coord_pattern = create_peyote_coordinate_pattern(pattern, cell_size=22, show_grid=show_grid, show_numbers=show_numbers)
             else:
                 grid_pattern = create_grid_pattern(pattern, cell_size=20, show_grid=show_grid)
-                coord_pattern = create_coordinate_pattern(pattern, cell_size=35, show_grid=show_grid, show_numbers=show_numbers)
+                coord_pattern = create_coordinate_pattern(pattern, cell_size=22, show_grid=show_grid, show_numbers=show_numbers)
         elif pattern_type == 'peyote':
             print(f"🎨 Generando patrón PEYOTE")
             grid_pattern = create_peyote_pattern(pattern, cell_size=20, show_grid=show_grid)
-            coord_pattern = create_peyote_coordinate_pattern(pattern, cell_size=35, show_grid=show_grid, show_numbers=show_numbers)
+            coord_pattern = create_peyote_coordinate_pattern(pattern, cell_size=22, show_grid=show_grid, show_numbers=show_numbers)
         else:
             print(f"🎨 Generando patrón CUADRÍCULA")
             grid_pattern = create_grid_pattern(pattern, cell_size=20, show_grid=show_grid)
-            coord_pattern = create_coordinate_pattern(pattern, cell_size=35, show_grid=show_grid, show_numbers=show_numbers)
+            coord_pattern = create_coordinate_pattern(pattern, cell_size=22, show_grid=show_grid, show_numbers=show_numbers)
         
         # Analyze colors
         color_analysis = analyze_pattern_colors(pattern, color_mode)
