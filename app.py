@@ -1030,20 +1030,25 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
         # Color swatch
         c.setFillColorRGB(color['rgb'][0]/255, color['rgb'][1]/255, color['rgb'][2]/255)
         c.rect(30*mm, y-3*mm, 15*mm, 4*mm, fill=1, stroke=1)
-        
-        # Text
-        c.setFillColorRGB(0, 0, 0)
-        c.drawString(50*mm, y, color['code'])
-        c.drawString(80*mm, y, color['name'][:25])
 
-        # CAMBIAR según modo:
+        # Text - alineado verticalmente con la caja
+        text_y = y - 1*mm  # Centrar texto con la caja
+        c.setFillColorRGB(0, 0, 0)
+        c.drawString(50*mm, text_y, color['code'])
+        c.drawString(80*mm, text_y, color['name'][:25])
+
         if color_mode == 'miyuki':
-            c.drawString(130*mm, y, color['miyuki'])
+            c.drawString(130*mm, text_y, color['miyuki'])
         else:
-            c.drawString(130*mm, y, color.get('hex', ''))  # ← CAMBIAR para RGB
-        
-        c.drawString(165*mm, y, str(color['count']))
-        c.drawString(185*mm, y, f"{color['percentage']}%")
+            c.drawString(130*mm, text_y, color.get('hex', ''))
+
+        c.drawString(165*mm, text_y, str(color['count']))
+        c.drawString(185*mm, text_y, f"{color['percentage']}%")
+
+        # AGREGAR: Línea separadora
+        c.setStrokeColorRGB(0.85, 0.85, 0.85)  # Gris claro
+        c.setLineWidth(0.5)
+        c.line(30*mm, y-4*mm, 195*mm, y-4*mm)  # Línea horizontal
         
         y -= 6*mm
     
