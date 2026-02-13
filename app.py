@@ -1032,7 +1032,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
         c.rect(30*mm, y-3*mm, 15*mm, 4*mm, fill=1, stroke=1)
 
         # Text - alineado verticalmente con la caja
-        text_y = y - 1.5*mm  # Centrar texto con la caja
+        text_y = y - 1.7*mm  # Centrar texto con la caja
         c.setFillColorRGB(0, 0, 0)
         c.drawString(50*mm, text_y, color['code'])
         c.drawString(80*mm, text_y, color['name'][:25])
