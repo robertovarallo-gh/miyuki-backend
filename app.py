@@ -708,17 +708,31 @@ def create_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, show_gr
         coord_font = ImageFont.load_default()
         label_font = ImageFont.load_default()
     
-    # Draw column numbers
+    # Draw column numbers (cada 5)
     for x in range(pixel_width):
-        text = str(x + 1)
-        x_pos = margin_left + x * cell_size + cell_size // 2
-        draw.text((x_pos, 20), text, fill='black', font=coord_font, anchor="mm")
-    
-    # Draw row numbers
+        if (x + 1) % 5 == 0:
+            text = str(x + 1)
+            x_pos = margin_left + x * cell_size + cell_size // 2
+            draw.text((x_pos, 20), text, fill='black', font=coord_font, anchor="mm")
+
+    # AGREGAR: Punto medio en X
+    mid_x = pixel_width // 2
+    if mid_x > 0:
+        x_pos = margin_left + mid_x * cell_size + cell_size // 2
+        draw.text((x_pos, 5), "M", fill='red', font=label_font, anchor="mm")
+
+    # Draw row numbers (cada 5)
     for y in range(pixel_height):
-        text = str(y + 1)
-        y_pos = margin_top + y * cell_size + cell_size // 2
-        draw.text((20, y_pos), text, fill='black', font=coord_font, anchor="mm")
+        if (y + 1) % 5 == 0:
+            text = str(y + 1)
+            y_pos = margin_top + y * cell_size + cell_size // 2
+            draw.text((20, y_pos), text, fill='black', font=coord_font, anchor="mm")
+
+    # AGREGAR: Punto medio en Y
+    mid_y = pixel_height // 2
+    if mid_y > 0:
+        y_pos = margin_top + mid_y * cell_size + cell_size // 2
+        draw.text((5, y_pos), "M", fill='red', font=label_font, anchor="mm")
     
     # Draw grid with colors and optional numbers
     pixels = pattern.load()
@@ -799,17 +813,31 @@ def create_peyote_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, 
         coord_font = ImageFont.load_default()
         label_font = ImageFont.load_default()
     
-    # Draw column numbers
+    # Draw column numbers (cada 5)
     for x in range(pixel_width):
-        text = str(x + 1)
-        x_pos = margin_left + x * cell_size + cell_size // 2
-        draw.text((x_pos, 20), text, fill='black', font=coord_font, anchor="mm")
-    
-    # Draw row numbers
+        if (x + 1) % 5 == 0:
+            text = str(x + 1)
+            x_pos = margin_left + x * cell_size + cell_size // 2
+            draw.text((x_pos, 20), text, fill='black', font=coord_font, anchor="mm")
+
+    # AGREGAR: Punto medio en X
+    mid_x = pixel_width // 2
+    if mid_x > 0:
+        x_pos = margin_left + mid_x * cell_size + cell_size // 2
+        draw.text((x_pos, 5), "M", fill='red', font=label_font, anchor="mm")
+
+    # Draw row numbers (cada 5)
     for y in range(pixel_height):
-        text = str(y + 1)
-        y_pos = margin_top + y * cell_size + cell_size // 2
-        draw.text((20, y_pos), text, fill='black', font=coord_font, anchor="mm")
+        if (y + 1) % 5 == 0:
+            text = str(y + 1)
+            y_pos = margin_top + y * cell_size + cell_size // 2
+            draw.text((20, y_pos), text, fill='black', font=coord_font, anchor="mm")
+
+    # AGREGAR: Punto medio en Y
+    mid_y = pixel_height // 2
+    if mid_y > 0:
+        y_pos = margin_top + mid_y * cell_size + cell_size // 2
+        draw.text((5, y_pos), "M", fill='red', font=label_font, anchor="mm")
     
     # Font para números
     try:
