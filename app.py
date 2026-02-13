@@ -719,7 +719,7 @@ def create_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, show_gr
     mid_x = pixel_width // 2
     if mid_x > 0:
         x_pos = margin_left + mid_x * cell_size + cell_size // 2
-        draw.text((x_pos, 5), "M", fill='red', font=label_font, anchor="mm")
+        draw.text((x_pos, 30), "M", fill='red', font=label_font, anchor="mm")
 
     # Draw row numbers (cada 5)
     for y in range(pixel_height):
@@ -732,7 +732,7 @@ def create_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, show_gr
     mid_y = pixel_height // 2
     if mid_y > 0:
         y_pos = margin_top + mid_y * cell_size + cell_size // 2
-        draw.text((5, y_pos), "M", fill='red', font=label_font, anchor="mm")
+        draw.text((30, y_pos), "M", fill='red', font=label_font, anchor="mm")
     
     # Draw grid with colors and optional numbers
     pixels = pattern.load()
@@ -824,7 +824,7 @@ def create_peyote_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, 
     mid_x = pixel_width // 2
     if mid_x > 0:
         x_pos = margin_left + mid_x * cell_size + cell_size // 2
-        draw.text((x_pos, 5), "M", fill='red', font=label_font, anchor="mm")
+        draw.text((x_pos, 30), "M", fill='red', font=label_font, anchor="mm")
 
     # Draw row numbers (cada 5)
     for y in range(pixel_height):
@@ -837,7 +837,7 @@ def create_peyote_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, 
     mid_y = pixel_height // 2
     if mid_y > 0:
         y_pos = margin_top + mid_y * cell_size + cell_size // 2
-        draw.text((5, y_pos), "M", fill='red', font=label_font, anchor="mm")
+        draw.text((30, y_pos), "M", fill='red', font=label_font, anchor="mm")
     
     # Font para números
     try:
