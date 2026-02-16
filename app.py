@@ -695,94 +695,92 @@ def create_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, show_gr
     margin_top = 50
     margin_left = 50
     
-    canvas_width = pixel_width * cell_size + margin_left
-    canvas_height = pixel_height * cell_size + margin_top
-    
+    # Calcular dimensiones
+    canvas_width = pixel_width * cell_size + margin_left * 2
+    canvas_height = pixel_height * cell_size + margin_top * 2
+        
     grid_img = Image.new('RGB', (canvas_width, canvas_height), 'white')
     draw = ImageDraw.Draw(grid_img)
-    
+
+    # ESCALAR el patrón al tamaño del cell_size
+    scaled_pattern = pattern.resize((pixel_width * cell_size, pixel_height * cell_size), Image.NEAREST)
+    scaled_pixels = scaled_pattern.load()
+        
     try:
         coord_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
         label_font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 14)
     except:
         coord_font = ImageFont.load_default()
         label_font = ImageFont.load_default()
-    
+        
     # Draw column numbers (cada 5)
     for x in range(pixel_width):
         if (x + 1) % 5 == 0:
             text = str(x + 1)
-            x_pos = margin_left + x * cell_size
-            draw.text((x_pos, 20), text, fill='black', font=coord_font, anchor="mm")
+            x_pos = margin_left + (x + 0.5) * cell_size  # Centrar sobre la columna
+            draw.text((x_pos, 30), text, fill='black', font=coord_font, anchor="mm")
 
-    # AGREGAR: Punto medio en X
+    # Punto medio en X
     mid_x = pixel_width // 2
     if mid_x > 0:
-        x_pos = margin_left + mid_x * cell_size + cell_size // 2
-        draw.text((x_pos, 30), "M", fill='red', font=label_font, anchor="mm")
+        x_pos = margin_left + (mid_x + 0.5) * cell_size
+        draw.text((x_pos, 15), "M", fill='red', font=label_font, anchor="mm")
 
     # Draw row numbers (cada 5)
     for y in range(pixel_height):
         if (y + 1) % 5 == 0:
             text = str(y + 1)
-            y_pos = margin_top + y * cell_size
-            draw.text((20, y_pos), text, fill='black', font=coord_font, anchor="mm")
+            y_pos = margin_top + (y + 0.5) * cell_size  # Centrar sobre la fila
+            draw.text((30, y_pos), text, fill='black', font=coord_font, anchor="mm")
 
-    # AGREGAR: Punto medio en Y
+    # Punto medio en Y
     mid_y = pixel_height // 2
     if mid_y > 0:
-        y_pos = margin_top + mid_y * cell_size + cell_size // 2
-        draw.text((30, y_pos), "M", fill='red', font=label_font, anchor="mm")
-    
-    # Draw grid with colors and optional numbers
-    pixels = pattern.load()
+        y_pos = margin_top + (mid_y + 0.5) * cell_size
+        draw.text((15, y_pos), "M", fill='red', font=label_font, anchor="mm")
 
-    # Font para números (ajustar según cell_size)
-    try:
-        font_size = max(8, int(cell_size * 0.4))  # 40% del tamaño de celda
-        font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-    except:
-        font = ImageFont.load_default()
+    # Pegar el patrón escalado en el canvas
+    grid_img.paste(scaled_pattern, (margin_left, margin_top))
 
-    for y in range(pixel_height):
-        current_color = None
-        counter = 0
-        
-        for x in range(pixel_width):
-            color = pixels[x, y]
+    # Dibujar grid si está activado
+    if show_grid:
+        for x in range(pixel_width + 1):
             x1 = margin_left + x * cell_size
+            draw.line([(x1, margin_top), (x1, margin_top + pixel_height * cell_size)], fill=(220, 220, 220), width=1)
+        
+        for y in range(pixel_height + 1):
             y1 = margin_top + y * cell_size
-            x2 = x1 + cell_size
-            y2 = y1 + cell_size
+            draw.line([(margin_left, y1), (margin_left + pixel_width * cell_size, y1)], fill=(220, 220, 220), width=1)
+
+    # Números opcionales
+    if show_numbers:
+        try:
+            font_size = max(8, int(cell_size * 0.4))
+            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
+        except:
+            font = ImageFont.load_default()
+        
+        for y in range(pixel_height):
+            current_color = None
+            counter = 0
             
-            # Dibujar celda
-            if show_grid:
-                draw.rectangle([x1, y1, x2, y2], fill=color, outline=(220, 220, 220), width=1)
-            else:
-                draw.rectangle([x1, y1, x2, y2], fill=color, outline=None)
-            
-            # Lógica de contador por color
-            if color != current_color:
-                counter = 1
-                current_color = color
-            else:
-                counter += 1
-            
-            # Dibujar número si está activado
-            if show_numbers:
+            for x in range(pixel_width):
+                color = scaled_pixels[x * cell_size + cell_size // 2, y * cell_size + cell_size // 2]
+                
+                if color != current_color:
+                    counter = 1
+                    current_color = color
+                else:
+                    counter += 1
+                
                 text_color = get_contrast_color(color)
                 text = str(counter)
                 
-                # Centrar texto en la celda
-                bbox = draw.textbbox((0, 0), text, font=font)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
+                x_pos = margin_left + (x + 0.5) * cell_size
+                y_pos = margin_top + (y + 0.5) * cell_size
                 
-                text_x = x1 + (cell_size - text_width) // 2
-                text_y = y1 + (cell_size - text_height) // 2
-                
-                draw.text((text_x, text_y), text, fill=text_color, font=font)
-    
+                draw.text((x_pos, y_pos), text, fill=text_color, font=font, anchor="mm")
+
     return grid_img
 
 def create_peyote_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, show_grid: bool = True, show_numbers: bool = False) -> Image.Image:
