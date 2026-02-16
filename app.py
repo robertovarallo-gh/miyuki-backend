@@ -764,8 +764,10 @@ def create_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, show_gr
             current_color = None
             counter = 0
             
+            original_pixels = pattern.load() 
+
             for x in range(pixel_width):
-                color = scaled_pixels[x * cell_size + cell_size // 2, y * cell_size + cell_size // 2]
+                color = original_pixels[x, y]  # ← Leer del original, no del escalado
                 
                 if color != current_color:
                     counter = 1
