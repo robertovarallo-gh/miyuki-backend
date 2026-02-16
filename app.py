@@ -712,7 +712,7 @@ def create_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, show_gr
     for x in range(pixel_width):
         if (x + 1) % 5 == 0:
             text = str(x + 1)
-            x_pos = margin_left + (x + 1) * cell_size
+            x_pos = margin_left + x * cell_size
             draw.text((x_pos, 20), text, fill='black', font=coord_font, anchor="mm")
 
     # AGREGAR: Punto medio en X
@@ -725,7 +725,7 @@ def create_coordinate_pattern(pattern: Image.Image, cell_size: int = 35, show_gr
     for y in range(pixel_height):
         if (y + 1) % 5 == 0:
             text = str(y + 1)
-            y_pos = margin_top + (y + 1) * cell_size
+            y_pos = margin_top + y * cell_size
             draw.text((20, y_pos), text, fill='black', font=coord_font, anchor="mm")
 
     # AGREGAR: Punto medio en Y
