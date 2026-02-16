@@ -964,24 +964,20 @@ def generate_pattern():
         else:
             pattern = pixelate_image(image, width_beads, height_beads, num_colors, 
                                     saturation, brightness, contrast, sharpness, color_mode)
-        
-        # Create different versions según el tipo de patrón
+
+        # Create pattern images (sin coordenadas - frontend las dibujará)
         if skip_quantization:
             print(f"🎨 Modo EDICIÓN - regenerando con pattern_type={pattern_type}")
             if pattern_type == 'peyote':
-                grid_pattern = create_peyote_pattern(pattern, cell_size=20, show_grid=show_grid)
-                coord_pattern = create_peyote_coordinate_pattern(pattern, cell_size=22, show_grid=show_grid, show_numbers=show_numbers)
+                grid_pattern = create_peyote_pattern(pattern, cell_size=20, show_grid=False)
             else:
-                grid_pattern = create_grid_pattern(pattern, cell_size=20, show_grid=show_grid)
-                coord_pattern = create_coordinate_pattern(pattern, cell_size=22, show_grid=show_grid, show_numbers=show_numbers)
+                grid_pattern = create_grid_pattern(pattern, cell_size=20, show_grid=False)
         elif pattern_type == 'peyote':
             print(f"🎨 Generando patrón PEYOTE")
-            grid_pattern = create_peyote_pattern(pattern, cell_size=20, show_grid=show_grid)
-            coord_pattern = create_peyote_coordinate_pattern(pattern, cell_size=22, show_grid=show_grid, show_numbers=show_numbers)
+            grid_pattern = create_peyote_pattern(pattern, cell_size=20, show_grid=False)
         else:
             print(f"🎨 Generando patrón CUADRÍCULA")
-            grid_pattern = create_grid_pattern(pattern, cell_size=20, show_grid=show_grid)
-            coord_pattern = create_coordinate_pattern(pattern, cell_size=22, show_grid=show_grid, show_numbers=show_numbers)
+            grid_pattern = create_grid_pattern(pattern, cell_size=20, show_grid=False)
 
         # Analyze colors
         color_analysis = analyze_pattern_colors(pattern, color_mode)
