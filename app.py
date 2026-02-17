@@ -651,7 +651,7 @@ def create_peyote_pattern(pattern: Image.Image, cell_size: int = 20, show_grid: 
     canvas_width = pixel_width * cell_size
     canvas_height = int((pixel_height + 0.5) * cell_size)
     peyote_img = Image.new('RGB', (canvas_width, canvas_height), 'white')
-    draw = ImageDraw.Draw(peyote_img)
+    draw = ImageDraw.Draw(peyote_img, mode='RGB')
     
     pixels = pattern.load()
     for y in range(pixel_height):
