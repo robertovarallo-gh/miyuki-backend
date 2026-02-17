@@ -575,6 +575,7 @@ def pixelate_image(image: Image.Image, target_width: int, target_height: int, nu
     
     # Resize to target dimensions
     img_small = image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+    print(f"🔍 pixelate_image resize: {image.size} -> {img_small.size}")
     
     # Get palette based on mode
     palette = MIYUKI_COLORS if color_mode == 'miyuki' else RGB_UNIVERSAL_COLORS
