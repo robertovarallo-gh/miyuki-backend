@@ -16,6 +16,7 @@ import os
 from typing import Tuple
 from rgb_palette import RGB_UNIVERSAL_COLORS, ColorInfo as ColorInfoRGB
 
+
 # Stripe configuration
 STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
 if not STRIPE_SECRET_KEY:
@@ -28,6 +29,33 @@ STRIPE_PRICE_MONTHLY = 'price_1T2ZcF8hc5PM7463OHDxSErz'
 STRIPE_PRICE_YEARLY = 'price_1T2ZcF8hc5PM7463MDrONqhk'
 
 stripe.api_key = STRIPE_SECRET_KEY
+
+import firebase_admin
+from firebase_admin import credentials, firestore
+import json
+
+# Firebase Admin configuration
+if not firebase_admin._apps:
+    # En producción (Render), lee del archivo de secret files
+    try:
+        cred = credentials.Certificate('/etc/secrets/firebase-credentials.json')
+        firebase_admin.initialize_app(cred)
+        print("✅ Firebase Admin inicializado desde archivo")
+    except FileNotFoundError:
+        # En desarrollo local, usa variable de entorno o archivo local
+        try:
+            firebase_creds = os.environ.get('FIREBASE_CREDENTIALS')
+            if firebase_creds:
+                cred_dict = json.loads(firebase_creds)
+                cred = credentials.Certificate(cred_dict)
+            else:
+                cred = credentials.Certificate('firebase-credentials.json')
+            firebase_admin.initialize_app(cred)
+            print("✅ Firebase Admin inicializado localmente")
+        except Exception as e:
+            print(f"⚠️ Firebase Admin no inicializado: {e}")
+
+db = firestore.client()
 
 app = Flask(__name__)
 
@@ -1169,9 +1197,31 @@ def stripe_webhook():
         print(f"✅ Pago exitoso para: {customer_email}")
         print(f"   Subscription ID: {subscription_id}")
         
-        # Aquí actualizaremos Firestore
-        # Por ahora solo logueamos
+            try:
+        # Buscar usuario por email en Firestore
+        users_ref = db.collection('users')
+        query = users_ref.where('email', '==', customer_email).limit(1)
+        docs = query.stream()
         
+        user_doc = None
+        for doc in docs:
+            user_doc = doc
+            break
+        
+        if user_doc:
+            # Actualizar plan a premium
+            users_ref.document(user_doc.id).update({
+                'plan': 'premium',
+                'subscriptionId': subscription_id,
+                'subscriptionStatus': 'active'
+            })
+            print(f"✅ Usuario actualizado a Premium: {user_doc.id}")
+        else:
+            print(f"⚠️ Usuario no encontrado: {customer_email}")
+            
+    except Exception as e:
+        print(f"❌ Error actualizando Firestore: {e}")
+               
     return jsonify({'status': 'success'}), 200
 
 if __name__ == '__main__':
