@@ -11,8 +11,23 @@ import numpy as np
 import io
 import base64
 import math
+import stripe
+import os
 from typing import Tuple
 from rgb_palette import RGB_UNIVERSAL_COLORS, ColorInfo as ColorInfoRGB
+
+# Stripe configuration
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+if not STRIPE_SECRET_KEY:
+    raise ValueError("STRIPE_SECRET_KEY no configurada")
+    
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+# Price IDs
+STRIPE_PRICE_MONTHLY = 'price_1T2ZcF8hc5PM7463OHDxSErz'
+STRIPE_PRICE_YEARLY = 'price_1T2ZcF8hc5PM7463MDrONqhk'
+
+stripe.api_key = STRIPE_SECRET_KEY
 
 app = Flask(__name__)
 
@@ -1104,6 +1119,31 @@ def get_palette_endpoint():
         
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    try:
+        data = request.get_json()
+        price_id = data.get('priceId')  # monthly o yearly
+        user_email = data.get('email')
+        
+        # Crear sesión de Stripe Checkout
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=user_email,
+            payment_method_types=['card'],
+            line_items=[{
+                'price': price_id,
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url='https://easycuentas.com/?payment=success',
+            cancel_url='https://easycuentas.com/?payment=cancel',
+        )
+        
+        return jsonify({'sessionId': checkout_session.id})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("=" * 60)
