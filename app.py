@@ -1145,6 +1145,35 @@ def create_checkout_session():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+    
+    try:
+        # Verificar firma del webhook
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError:
+        return jsonify({'error': 'Invalid payload'}), 400
+    except stripe.error.SignatureVerificationError:
+        return jsonify({'error': 'Invalid signature'}), 400
+    
+    # Manejar eventos de suscripción
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        customer_email = session['customer_email']
+        subscription_id = session['subscription']
+        
+        print(f"✅ Pago exitoso para: {customer_email}")
+        print(f"   Subscription ID: {subscription_id}")
+        
+        # Aquí actualizaremos Firestore
+        # Por ahora solo logueamos
+        
+    return jsonify({'status': 'success'}), 200
+
 if __name__ == '__main__':
     print("=" * 60)
     print("🎨 MIYUKI PATTERN GENERATOR - STARTED")
