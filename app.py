@@ -1197,30 +1197,30 @@ def stripe_webhook():
         print(f"✅ Pago exitoso para: {customer_email}")
         print(f"   Subscription ID: {subscription_id}")
         
-            try:
-        # Buscar usuario por email en Firestore
-        users_ref = db.collection('users')
-        query = users_ref.where('email', '==', customer_email).limit(1)
-        docs = query.stream()
-        
-        user_doc = None
-        for doc in docs:
-            user_doc = doc
-            break
-        
-        if user_doc:
-            # Actualizar plan a premium
-            users_ref.document(user_doc.id).update({
-                'plan': 'premium',
-                'subscriptionId': subscription_id,
-                'subscriptionStatus': 'active'
-            })
-            print(f"✅ Usuario actualizado a Premium: {user_doc.id}")
-        else:
-            print(f"⚠️ Usuario no encontrado: {customer_email}")
+        try:
+            # Buscar usuario por email en Firestore
+            users_ref = db.collection('users')
+            query = users_ref.where('email', '==', customer_email).limit(1)
+            docs = query.stream()
             
-    except Exception as e:
-        print(f"❌ Error actualizando Firestore: {e}")
+            user_doc = None
+            for doc in docs:
+                user_doc = doc
+                break
+            
+            if user_doc:
+                # Actualizar plan a premium
+                users_ref.document(user_doc.id).update({
+                    'plan': 'premium',
+                    'subscriptionId': subscription_id,
+                    'subscriptionStatus': 'active'
+                })
+                print(f"✅ Usuario actualizado a Premium: {user_doc.id}")
+            else:
+                print(f"⚠️ Usuario no encontrado: {customer_email}")
+                
+        except Exception as e:
+            print(f"❌ Error actualizando Firestore: {e}")
                
     return jsonify({'status': 'success'}), 200
 
