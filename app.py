@@ -1221,6 +1221,36 @@ def stripe_webhook():
                 
         except Exception as e:
             print(f"❌ Error actualizando Firestore: {e}")
+
+    elif event['type'] == 'customer.subscription.deleted':
+        subscription = event['data']['object']
+        subscription_id = subscription['id']
+        
+        print(f"⚠️ Suscripción cancelada: {subscription_id}")
+        
+        try:
+            # Buscar usuario por subscriptionId en Firestore
+            users_ref = db.collection('users')
+            query = users_ref.where('subscriptionId', '==', subscription_id).limit(1)
+            docs = query.stream()
+            
+            user_doc = None
+            for doc in docs:
+                user_doc = doc
+                break
+            
+            if user_doc:
+                # Downgrade a Free
+                users_ref.document(user_doc.id).update({
+                    'plan': 'free',
+                    'subscriptionStatus': 'canceled'
+                })
+                print(f"✅ Usuario downgradeado a Free: {user_doc.id}")
+            else:
+                print(f"⚠️ Usuario no encontrado con subscriptionId: {subscription_id}")
+                
+        except Exception as e:
+            print(f"❌ Error downgrading usuario: {e}")
                
     return jsonify({'status': 'success'}), 200
 
