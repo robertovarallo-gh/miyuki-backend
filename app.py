@@ -833,13 +833,20 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     c = pdf_canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
     
-    # Title
+    # AGREGAR LOGO
+    try:
+        logo_path = 'easy-cuentas-logo.png'  # o .jpg
+        c.drawImage(logo_path, 30*mm, height - 25*mm, width=15*mm, height=15*mm, preserveAspectRatio=True, mask='auto')
+    except:
+        pass  # Si no encuentra el logo, continúa sin él
+
+    # Title (ajustar posición porque ahora hay logo)
     c.setFont("Helvetica-Bold", 16)
     title = "GUÍA DE COLORES - MIYUKI BEADS" if color_mode == 'miyuki' else "GUÍA DE COLORES - RGB UNIVERSAL"
-    c.drawString(30*mm, height - 30*mm, title)  # ← CAMBIAR
+    c.drawString(50*mm, height - 30*mm, title)  # ← Mover a la derecha
     
     c.setFont("Helvetica", 10)
-    c.drawString(30*mm, height - 40*mm, "Miyuki Bead Pattern Generator")
+    c.drawString(30*mm, height - 40*mm, "Easy Cuentas - easycuentas.com")
     unit = "cuentas" if color_mode == 'miyuki' else "píxeles"  # ← NUEVA LÍNEA
     c.drawString(30*mm, height - 47*mm, 
                  f"Patrón: {pattern_info['width']}x{pattern_info['height']} beads | "
@@ -897,7 +904,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     
     # Footer
     c.setFont("Helvetica-Oblique", 7)
-    c.drawString(30*mm, 15*mm, "Miyuki Pattern Generator - https://www.miyuki-beads.co.jp/english/")
+    c.drawString(30*mm, 15*mm, "Easy Cuentas - easycuentas.com")
     
     # CAMBIAR footer según modo:
     if color_mode == 'miyuki':
@@ -913,10 +920,18 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict) -> bytes:
     buffer = io.BytesIO()
     c = pdf_canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    
-    # Title
+
+    # AGREGAR LOGO
+    try:
+        logo_path = 'easy-cuentas-logo.png'  # o .jpg
+        c.drawImage(logo_path, 30*mm, height - 25*mm, width=15*mm, height=15*mm, preserveAspectRatio=True, mask='auto')
+    except:
+        pass  # Si no encuentra el logo, continúa sin él
+
+    # Title (ajustar posición porque ahora hay logo)
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(30*mm, height - 30*mm, "GUÍA DE MONTAJE POR FILA")
+    title = "GUÍA DE MONTAJE POR FILA"
+    c.drawString(50*mm, height - 30*mm, title)  # ← Mover a la derecha
     
     c.setFont("Helvetica", 10)
     c.drawString(30*mm, height - 40*mm, f"Patrón: {pattern_info['width']}x{pattern_info['height']} beads")
@@ -950,7 +965,7 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict) -> bytes:
     
     # Footer
     c.setFont("Helvetica-Oblique", 7)
-    c.drawString(30*mm, 15*mm, "Secuencia: izquierda → derecha | Miyuki Pattern Generator")
+    c.drawString(30*mm, 15*mm, "Secuencia: izquierda → derecha | Easy Cuentas - easycuentas.com")
     
     c.save()
     return buffer.getvalue()
