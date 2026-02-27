@@ -833,20 +833,31 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     c = pdf_canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
     
-    # AGREGAR LOGO
+    # AGREGAR LOGO Y HEADER
     try:
-        logo_path = 'easy-cuentas-logo.png'  # o .jpg
-        c.drawImage(logo_path, 30*mm, height - 25*mm, width=15*mm, height=15*mm, preserveAspectRatio=True, mask='auto')
+        logo_path = 'easycuentas-logo.png'
+        c.drawImage(logo_path, 30*mm, height - 28*mm, width=12*mm, height=12*mm, preserveAspectRatio=True, mask='auto')
     except:
-        pass  # Si no encuentra el logo, continúa sin él
+        pass
 
-    # Title (ajustar posición porque ahora hay logo)
-    c.setFont("Helvetica-Bold", 16)
-    title = "GUÍA DE COLORES - MIYUKI BEADS" if color_mode == 'miyuki' else "GUÍA DE COLORES - RGB UNIVERSAL"
-    c.drawString(50*mm, height - 30*mm, title)  # ← Mover a la derecha
+    # Easy Cuentas al lado del logo
+    c.setFont("Helvetica-Bold", 20)
+    c.setFillColorRGB(0, 0.808, 0.82)  # Color turquesa como en la web
+    c.drawString(45*mm, height - 23*mm, "Easy Cuentas")
+
+    # easycuentas.com debajo
+    c.setFillColorRGB(0, 0, 0)  # Negro
+    c.setFont("Helvetica", 9)
+    c.drawString(45*mm, height - 28*mm, "easycuentas.com")
+
+    # Título del documento
+    c.setFont("Helvetica-Bold", 14)
+    title = "GUÍA DE COLORES - CUENTAS MIYUKI" if color_mode == 'miyuki' else "GUÍA DE COLORES - RGB UNIVERSAL"
+    c.drawString(30*mm, height - 38*mm, title)
     
     c.setFont("Helvetica", 10)
-    c.drawString(30*mm, height - 40*mm, "Easy Cuentas - easycuentas.com")
+    c.drawString(30*mm, height - 47*mm, "Easy Cuentas - easycuentas.com")
+
     unit = "cuentas" if color_mode == 'miyuki' else "píxeles"  # ← NUEVA LÍNEA
     c.drawString(30*mm, height - 47*mm, 
                  f"Patrón: {pattern_info['width']}x{pattern_info['height']} beads | "
@@ -921,20 +932,30 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict) -> bytes:
     c = pdf_canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # AGREGAR LOGO
+    # AGREGAR LOGO Y HEADER
     try:
-        logo_path = 'easy-cuentas-logo.png'  # o .jpg
-        c.drawImage(logo_path, 30*mm, height - 25*mm, width=15*mm, height=15*mm, preserveAspectRatio=True, mask='auto')
+        logo_path = 'easycuentas-logo.png'
+        c.drawImage(logo_path, 30*mm, height - 28*mm, width=12*mm, height=12*mm, preserveAspectRatio=True, mask='auto')
     except:
-        pass  # Si no encuentra el logo, continúa sin él
+        pass
 
-    # Title (ajustar posición porque ahora hay logo)
-    c.setFont("Helvetica-Bold", 16)
-    title = "GUÍA DE MONTAJE POR FILA"
-    c.drawString(50*mm, height - 30*mm, title)  # ← Mover a la derecha
-    
+    # Easy Cuentas al lado del logo
+    c.setFont("Helvetica-Bold", 20)
+    c.setFillColorRGB(0, 0.808, 0.82)  # Color turquesa
+    c.drawString(45*mm, height - 23*mm, "Easy Cuentas")
+
+    # easycuentas.com debajo
+    c.setFillColorRGB(0, 0, 0)  # Negro
+    c.setFont("Helvetica", 9)
+    c.drawString(45*mm, height - 28*mm, "easycuentas.com")
+
+    # Título del documento
+    c.setFont("Helvetica-Bold", 14)
+    c.drawString(30*mm, height - 38*mm, "GUÍA DE MONTAJE POR FILA")
+
+    # Info del patrón
     c.setFont("Helvetica", 10)
-    c.drawString(30*mm, height - 40*mm, f"Patrón: {pattern_info['width']}x{pattern_info['height']} beads")
+    c.drawString(30*mm, height - 47*mm, f"Patrón: {pattern_info['width']}x{pattern_info['height']} beads")
     
     y = height - 55*mm
     c.setFont("Helvetica", 8)
