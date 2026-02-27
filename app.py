@@ -954,7 +954,7 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
     c.setFont("Helvetica", 10)
 
     unit = "Miyuki" if color_mode == 'miyuki' else "RGB"
-    c.drawString(30*mm, height - 47*mm, f"Patrón: {pattern_info['width']}x{pattern_info['height']} cuentas | Códigos: {unit}")
+    c.drawString(30*mm, height - 47*mm, f"Patrón: {pattern_info['width']}x{pattern_info['height']} cuentas | Códigos: {unit} x cantidad")
     
     y = height - 55*mm
     c.setFont("Helvetica", 8)
