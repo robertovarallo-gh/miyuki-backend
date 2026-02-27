@@ -855,9 +855,6 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     title = "GUÍA DE COLORES - CUENTAS MIYUKI" if color_mode == 'miyuki' else "GUÍA DE COLORES - RGB UNIVERSAL"
     c.drawString(30*mm, height - 38*mm, title)
     
-    c.setFont("Helvetica", 10)
-    c.drawString(30*mm, height - 47*mm, "Easy Cuentas - easycuentas.com")
-
     unit = "cuentas" if color_mode == 'miyuki' else "píxeles"  # ← NUEVA LÍNEA
     c.drawString(30*mm, height - 47*mm, 
                  f"Patrón: {pattern_info['width']}x{pattern_info['height']} beads | "
@@ -926,7 +923,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     c.save()
     return buffer.getvalue()
 
-def generate_assembly_guide_pdf(rows: list, pattern_info: dict) -> bytes:
+def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str = 'miyuki') -> bytes:
     """Generate PDF assembly guide"""
     buffer = io.BytesIO()
     c = pdf_canvas.Canvas(buffer, pagesize=A4)
@@ -955,7 +952,9 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict) -> bytes:
 
     # Info del patrón
     c.setFont("Helvetica", 10)
-    c.drawString(30*mm, height - 47*mm, f"Patrón: {pattern_info['width']}x{pattern_info['height']} beads")
+
+    unit = "Miyuki" if color_mode == 'miyuki' else "RGB"
+    c.drawString(30*mm, height - 47*mm, f"Patrón: {pattern_info['width']}x{pattern_info['height']} cuentas | Códigos: {unit}")
     
     y = height - 55*mm
     c.setFont("Helvetica", 8)
@@ -1125,8 +1124,9 @@ def generate_assembly_guide_endpoint():
         data = request.get_json()
         rows = data.get('rows', [])
         pattern_info = data.get('patternInfo', {})
+        color_mode = data.get('colorMode', 'miyuki')  # ← AGREGAR
         
-        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info)
+        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info, color_mode)  # ← AGREGAR
         pdf_base64 = base64.b64encode(pdf_bytes).decode()
         
         return jsonify({
