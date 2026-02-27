@@ -835,7 +835,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     
     # AGREGAR LOGO Y HEADER
     try:
-        logo_path = 'easycuentas-logo.png'
+        logo_path = 'easy-cuentas-logo.png'
         c.drawImage(logo_path, 30*mm, height - 28*mm, width=12*mm, height=12*mm, preserveAspectRatio=True, mask='auto')
     except:
         pass
@@ -934,7 +934,7 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict) -> bytes:
 
     # AGREGAR LOGO Y HEADER
     try:
-        logo_path = 'easycuentas-logo.png'
+        logo_path = 'easy-cuentas-logo.png'
         c.drawImage(logo_path, 30*mm, height - 28*mm, width=12*mm, height=12*mm, preserveAspectRatio=True, mask='auto')
     except:
         pass
