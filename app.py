@@ -833,6 +833,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     tr = {
         'es': {
             'domain':       'easycuentas.com',
+            'brand':        'Easy Cuentas',
             'title_miyuki': 'GUÍA DE COLORES - CUENTAS MIYUKI',
             'title_rgb':    'GUÍA DE COLORES - RGB UNIVERSAL',
             'pattern':      'Patrón',
@@ -848,6 +849,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
         },
         'en': {
             'domain':       'myeasybeads.com',
+            'brand':        'My Easy Beads',
             'title_miyuki': 'COLOR GUIDE - MIYUKI BEADS',
             'title_rgb':    'COLOR GUIDE - UNIVERSAL RGB',
             'pattern':      'Pattern',
@@ -877,7 +879,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     # Easy Cuentas al lado del logo
     c.setFont("Helvetica-Bold", 20)
     c.setFillColorRGB(0, 0.808, 0.82)  # Color turquesa como en la web
-    c.drawString(45*mm, height - 23*mm, "Easy Cuentas")
+    c.drawString(45*mm, height - 23*mm, t['brand'])
 
     # easycuentas.com debajo
     c.setFillColorRGB(0, 0, 0)  # Negro
@@ -946,7 +948,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     
     # Footer
     c.setFont("Helvetica-Oblique", 7)
-    c.drawString(30*mm, 15*mm, "Easy Cuentas - " + t['domain'])
+    c.drawString(30*mm, 15*mm, t['brand'] + " - " + t['domain'])
     
     # CAMBIAR footer según modo:
     if color_mode == 'miyuki':
@@ -963,6 +965,7 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
     tr = {
         'es': {
             'domain':   'easycuentas.com',
+            'brand':    'Easy Cuentas',
             'title':    'GUÍA DE MONTAJE POR FILA',
             'pattern':  'Patrón',
             'codes':    'Códigos',
@@ -973,13 +976,14 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
         },
         'en': {
             'domain':   'myeasybeads.com',
+            'brand':    'My Easy Beads',
             'title':    'ROW-BY-ROW ASSEMBLY GUIDE',
             'pattern':  'Pattern',
             'codes':    'Codes',
             'qty':      'x quantity',
             'unit':     'beads',
             'row':      'Row',
-            'footer':   'Sequence: left → right | Easy Beads - myeasybeads.com',
+            'footer':   'Sequence: left → right | My Easy Beads - myeasybeads.com',
         }
     }
     t = tr.get(lang, tr['es'])
@@ -997,7 +1001,7 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
     # Easy Cuentas al lado del logo
     c.setFont("Helvetica-Bold", 20)
     c.setFillColorRGB(0, 0.808, 0.82)  # Color turquesa
-    c.drawString(45*mm, height - 23*mm, "Easy Cuentas")
+    c.drawString(45*mm, height - 23*mm, t['brand'])
 
     # easycuentas.com debajo
     c.setFillColorRGB(0, 0, 0)  # Negro
