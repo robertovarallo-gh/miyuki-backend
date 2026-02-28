@@ -65,9 +65,10 @@ CORS(app, resources={
         "origins": [
             "https://miyuki-frontend.vercel.app",  # Tu dominio de Vercel
             "https://miyuki-frontend-*.vercel.app",  # Preview deploys
-            "https://easycuentas.com",  # Agrega aquí otros dominios que necesites permitir
+            "https://easycuentas.com",
+            "https://www.easycuentas.com",
             "https://myeasybeads.com",
-            "https://www.myeasybeads.com",            
+            "https://www.myeasybeads.com",
             "http://localhost:3000",  # Para desarrollo local
             "http://127.0.0.1:5000"
         ]
@@ -1252,6 +1253,13 @@ def create_checkout_session():
         price_id = data.get('priceId')  # monthly o yearly
         user_email = data.get('email')
         
+        # Determinar dominio según origen del request
+        origin = request.headers.get('Origin', 'https://easycuentas.com')
+        if 'myeasybeads' in origin:
+            base_url = 'https://myeasybeads.com'
+        else:
+            base_url = 'https://easycuentas.com'
+
         # Crear sesión de Stripe Checkout
         checkout_session = stripe.checkout.Session.create(
             customer_email=user_email,
@@ -1261,8 +1269,8 @@ def create_checkout_session():
                 'quantity': 1,
             }],
             mode='subscription',
-            success_url='https://easycuentas.com/?payment=success',
-            cancel_url='https://easycuentas.com/?payment=cancel',
+            success_url=f'{base_url}/?payment=success',
+            cancel_url=f'{base_url}/?payment=cancel',
         )
         
         return jsonify({'sessionId': checkout_session.id})
