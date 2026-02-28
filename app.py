@@ -827,8 +827,40 @@ def generate_row_guide(pattern: Image.Image, color_mode: str = 'miyuki') -> dict
 # PDF GENERATION FUNCTIONS
 # ============================================================================
 
-def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str = 'miyuki') -> bytes:
+def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str = 'miyuki', lang: str = 'es') -> bytes:
     """Generate PDF color guide"""
+    # Translations
+    tr = {
+        'es': {
+            'title_miyuki': 'GUÍA DE COLORES - CUENTAS MIYUKI',
+            'title_rgb':    'GUÍA DE COLORES - RGB UNIVERSAL',
+            'pattern':      'Patrón',
+            'total':        'Total',
+            'colors':       'colores',
+            'unit_miyuki':  'cuentas',
+            'unit_rgb':     'píxeles',
+            'col_code':     'Código',
+            'col_name':     'Nombre',
+            'col_qty':      'Cantidad',
+            'footer_miyuki':'IMPORTANTE: Códigos Miyuki son aproximados - verifica colores antes de comprar',
+            'footer_rgb':   'Códigos Hex para referencia - Compatible con cualquier marca de cuentas',
+        },
+        'en': {
+            'title_miyuki': 'COLOR GUIDE - MIYUKI BEADS',
+            'title_rgb':    'COLOR GUIDE - UNIVERSAL RGB',
+            'pattern':      'Pattern',
+            'total':        'Total',
+            'colors':       'colors',
+            'unit_miyuki':  'beads',
+            'unit_rgb':     'pixels',
+            'col_code':     'Code',
+            'col_name':     'Name',
+            'col_qty':      'Qty',
+            'footer_miyuki':'IMPORTANT: Miyuki codes are approximate - verify colors before purchasing',
+            'footer_rgb':   'Hex codes for reference - Compatible with any bead brand',
+        }
+    }
+    t = tr.get(lang, tr['es'])
     buffer = io.BytesIO()
     c = pdf_canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -852,20 +884,20 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
 
     # Título del documento
     c.setFont("Helvetica-Bold", 14)
-    title = "GUÍA DE COLORES - CUENTAS MIYUKI" if color_mode == 'miyuki' else "GUÍA DE COLORES - RGB UNIVERSAL"
+    title = t['title_miyuki'] if color_mode == 'miyuki' else t['title_rgb']
     c.drawString(30*mm, height - 38*mm, title)
     
-    unit = "cuentas" if color_mode == 'miyuki' else "píxeles"  # ← NUEVA LÍNEA
-    c.drawString(30*mm, height - 47*mm, 
-                 f"Patrón: {pattern_info['width']}x{pattern_info['height']} beads | "
-                 f"Total: {pattern_info['total_beads']} {unit} | {len(colors)} colores")  # ← CAMBIAR
+    unit = t['unit_miyuki'] if color_mode == 'miyuki' else t['unit_rgb']
+    c.drawString(30*mm, height - 47*mm,
+                 f"{t['pattern']}: {pattern_info['width']}x{pattern_info['height']} {unit} | "
+                 f"{t['total']}: {pattern_info['total_beads']} {unit} | {len(colors)} {t['colors']}")
     
     # Table
     y = height - 65*mm
     c.setFont("Helvetica-Bold", 9)
-    c.drawString(30*mm, y, "Color")
-    c.drawString(50*mm, y, "Código")
-    c.drawString(80*mm, y, "Nombre")
+    c.drawString(30*mm, y, 'Color')
+    c.drawString(50*mm, y, t['col_code'])
+    c.drawString(80*mm, y, t['col_name'])
     
     # CAMBIAR header según modo:
     if color_mode == 'miyuki':
@@ -873,7 +905,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     else:
         c.drawString(130*mm, y, "Hex")  # ← CAMBIAR para RGB
 
-    c.drawString(165*mm, y, "Cantidad")
+    c.drawString(165*mm, y, t['col_qty'])
     c.drawString(185*mm, y, "%")
     
     y -= 5*mm
@@ -916,15 +948,37 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     
     # CAMBIAR footer según modo:
     if color_mode == 'miyuki':
-        c.drawString(30*mm, 10*mm, "IMPORTANTE: Códigos Miyuki son aproximados - verifica colores antes de comprar")
+        c.drawString(30*mm, 10*mm, t['footer_miyuki'])
     else:
-        c.drawString(30*mm, 10*mm, "Códigos Hex para referencia - Compatible con cualquier marca de cuentas")
+        c.drawString(30*mm, 10*mm, t['footer_rgb'])
     
     c.save()
     return buffer.getvalue()
 
-def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str = 'miyuki') -> bytes:
+def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str = 'miyuki', lang: str = 'es') -> bytes:
     """Generate PDF assembly guide"""
+    # Translations
+    tr = {
+        'es': {
+            'title':    'GUÍA DE MONTAJE POR FILA',
+            'pattern':  'Patrón',
+            'codes':    'Códigos',
+            'qty':      'x cantidad',
+            'unit':     'cuentas',
+            'row':      'Fila',
+            'footer':   'Secuencia: izquierda → derecha | Easy Cuentas - easycuentas.com',
+        },
+        'en': {
+            'title':    'ROW-BY-ROW ASSEMBLY GUIDE',
+            'pattern':  'Pattern',
+            'codes':    'Codes',
+            'qty':      'x quantity',
+            'unit':     'beads',
+            'row':      'Row',
+            'footer':   'Sequence: left → right | Easy Cuentas - easycuentas.com',
+        }
+    }
+    t = tr.get(lang, tr['es'])
     buffer = io.BytesIO()
     c = pdf_canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
@@ -948,13 +1002,13 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
 
     # Título del documento
     c.setFont("Helvetica-Bold", 14)
-    c.drawString(30*mm, height - 38*mm, "GUÍA DE MONTAJE POR FILA")
+    c.drawString(30*mm, height - 38*mm, t['title'])
 
     # Info del patrón
     c.setFont("Helvetica", 10)
 
-    unit = "Miyuki" if color_mode == 'miyuki' else "RGB"
-    c.drawString(30*mm, height - 47*mm, f"Patrón: {pattern_info['width']}x{pattern_info['height']} cuentas | Códigos: {unit} x cantidad")
+    unit_label = 'Miyuki' if color_mode == 'miyuki' else 'RGB'
+    c.drawString(30*mm, height - 47*mm, f"{t['pattern']}: {pattern_info['width']}x{pattern_info['height']} {t['unit']} | {t['codes']}: {unit_label} {t['qty']}")
     
     y = height - 55*mm
     c.setFont("Helvetica", 8)
@@ -967,7 +1021,7 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
         
         # Row header
         c.setFont("Helvetica-Bold", 9)
-        c.drawString(30*mm, y, f"Fila {row['row']}:")
+        c.drawString(30*mm, y, f"{t['row']} {row['row']}:")
         
         # Totals
         totals_text = ", ".join([f"{t['code']}:{t['count']}" for t in row['totals']])
@@ -985,7 +1039,7 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
     
     # Footer
     c.setFont("Helvetica-Oblique", 7)
-    c.drawString(30*mm, 15*mm, "Secuencia: izquierda → derecha | Easy Cuentas - easycuentas.com")
+    c.drawString(30*mm, 15*mm, t['footer'])
     
     c.save()
     return buffer.getvalue()
@@ -1100,14 +1154,10 @@ def generate_color_guide_pdf_endpoint():
         data = request.get_json()
         colors = data.get('colors', [])
         pattern_info = data.get('patternInfo', {})
-        color_mode = data.get('colorMode', 'miyuki')  # ← AGREGAR
-
-        # print("=" * 60)
-        # print(f"🔍 PDF - COLOR MODE RECIBIDO: '{color_mode}'")
-        # print(f"🔍 PDF - Número de colores: {len(colors)}")
-        # print("=" * 60)
+        color_mode = data.get('colorMode', 'miyuki')
+        lang = data.get('lang', 'es')
         
-        pdf_bytes = generate_color_guide_pdf(colors, pattern_info, color_mode)
+        pdf_bytes = generate_color_guide_pdf(colors, pattern_info, color_mode, lang)
         pdf_base64 = base64.b64encode(pdf_bytes).decode()
         
         return jsonify({
@@ -1124,9 +1174,10 @@ def generate_assembly_guide_endpoint():
         data = request.get_json()
         rows = data.get('rows', [])
         pattern_info = data.get('patternInfo', {})
-        color_mode = data.get('colorMode', 'miyuki')  # ← AGREGAR
+        color_mode = data.get('colorMode', 'miyuki')
+        lang = data.get('lang', 'es')
         
-        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info, color_mode)  # ← AGREGAR
+        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info, color_mode, lang)
         pdf_base64 = base64.b64encode(pdf_bytes).decode()
         
         return jsonify({
