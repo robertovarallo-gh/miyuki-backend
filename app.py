@@ -66,6 +66,8 @@ CORS(app, resources={
             "https://miyuki-frontend.vercel.app",  # Tu dominio de Vercel
             "https://miyuki-frontend-*.vercel.app",  # Preview deploys
             "https://easycuentas.com",  # Agrega aquí otros dominios que necesites permitir
+            "https://myeasybeads.com",
+            "https://www.myeasybeads.com",            
             "http://localhost:3000",  # Para desarrollo local
             "http://127.0.0.1:5000"
         ]
