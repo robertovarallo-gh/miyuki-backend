@@ -683,19 +683,12 @@ def find_closest_color(target_color: Tuple[int, int, int], color_mode: str = 'mi
 # IMAGE PROCESSING FUNCTIONS
 # ============================================================================
 
-BEAD_TYPES = {
-    'delica': {'bead_width_mm': 1.3, 'bead_height_mm': 1.6},
-}
-
-def get_bead_dimensions_mm(bead_type: str):
-    """Return (bead_width_mm, bead_height_mm) for a given bead type."""
-    bead = BEAD_TYPES.get(bead_type, BEAD_TYPES['delica'])
-    return bead['bead_width_mm'], bead['bead_height_mm']
-
-def calculate_bead_dimensions(width_cm: float, height_cm: float, bead_width_mm: float, bead_height_mm: float) -> Tuple[int, int]:
+def calculate_bead_dimensions(width_cm: float, height_cm: float, bead_size_mm: float) -> Tuple[int, int]:
     """Calculate pattern dimensions in beads"""
-    width_beads = round((width_cm * 10) / bead_width_mm)
-    height_beads = round((height_cm * 10) / bead_height_mm)
+    width_mm = width_cm * 10
+    height_mm = height_cm * 10
+    width_beads = round(width_mm / bead_size_mm)
+    height_beads = round(height_mm / bead_size_mm)
     return width_beads, height_beads
 
 def pixelate_image(image: Image.Image, target_width: int, target_height: int, num_colors: int = 10, 
@@ -778,12 +771,12 @@ def pixelate_image(image: Image.Image, target_width: int, target_height: int, nu
     
     return result_image
 
-def create_grid_pattern(pattern: Image.Image, cell_size: int = 20, show_grid: bool = True) -> Image.Image:
+def create_grid_pattern(pattern: Image.Image, cell_width: int = 20, cell_height: int = 25, show_grid: bool = True) -> Image.Image:
     """Create pattern with optional grid overlay"""
     pixel_width, pixel_height = pattern.size
     
-    canvas_width = pixel_width * cell_size
-    canvas_height = pixel_height * cell_size
+    canvas_width = pixel_width * cell_width
+    canvas_height = pixel_height * cell_height
     grid_img = Image.new('RGB', (canvas_width, canvas_height), 'white')
     draw = ImageDraw.Draw(grid_img)
     
@@ -791,10 +784,10 @@ def create_grid_pattern(pattern: Image.Image, cell_size: int = 20, show_grid: bo
     for y in range(pixel_height):
         for x in range(pixel_width):
             color = pixels[x, y]
-            x1 = x * cell_size
-            y1 = y * cell_size
-            x2 = x1 + cell_size
-            y2 = y1 + cell_size
+            x1 = x * cell_width
+            y1 = y * cell_height
+            x2 = x1 + cell_width
+            y2 = y1 + cell_height
             
             if show_grid:
                 if x == 0 and y == 0:  # Solo log del primer pixel
@@ -807,13 +800,13 @@ def create_grid_pattern(pattern: Image.Image, cell_size: int = 20, show_grid: bo
     
     return grid_img
 
-def create_peyote_pattern(pattern: Image.Image, cell_size: int = 20, show_grid: bool = True) -> Image.Image:
+def create_peyote_pattern(pattern: Image.Image, cell_width: int = 20, cell_height: int = 25, show_grid: bool = True) -> Image.Image:
     """Create pattern in peyote stitch format (staggered columns - vertical offset)"""
     pixel_width, pixel_height = pattern.size
     
     # En peyote, las columnas pares están desplazadas 0.5 celdas HACIA ABAJO
-    canvas_width = pixel_width * cell_size
-    canvas_height = int((pixel_height + 0.5) * cell_size)
+    canvas_width = pixel_width * cell_width
+    canvas_height = int((pixel_height + 0.5) * cell_height)
     peyote_img = Image.new('RGB', (canvas_width, canvas_height), 'white')
     draw = ImageDraw.Draw(peyote_img, mode='RGB')
     
@@ -824,12 +817,12 @@ def create_peyote_pattern(pattern: Image.Image, cell_size: int = 20, show_grid: 
             
             # Calcular desplazamiento VERTICAL: columnas pares (0, 2, 4...) no se desplazan
             # columnas impares (1, 3, 5...) se desplazan 0.5 celdas HACIA ABAJO
-            offset_y = (cell_size // 2) if (x % 2 == 1) else 0
+            offset_y = (cell_height // 2) if (x % 2 == 1) else 0
             
-            x1 = x * cell_size
-            y1 = y * cell_size + offset_y
-            x2 = x1 + cell_size
-            y2 = y1 + cell_size
+            x1 = x * cell_width
+            y1 = y * cell_height + offset_y
+            x2 = x1 + cell_width
+            y2 = y1 + cell_height
             
             if show_grid:
                 if x == 0 and y == 0:
@@ -1185,8 +1178,7 @@ def generate_pattern():
         image_data = data.get('image')
         width_cm = float(data.get('width', 5.0))
         height_cm = float(data.get('height', 5.0))
-        bead_type = data.get('beadType', 'delica')
-        bead_width_mm, bead_height_mm = get_bead_dimensions_mm(bead_type)
+        bead_size_mm = float(data.get('beadSize', 1.5))
         show_grid = data.get('showGrid', True)  # ← DEBE ESTAR ESTO
         num_colors = int(data.get('numColors', 10))
         print(f"🔍 Backend recibió showGrid: {show_grid}")
@@ -1208,7 +1200,7 @@ def generate_pattern():
         image = Image.open(io.BytesIO(image_bytes))
 
         # Calculate dimensions
-        width_beads, height_beads = calculate_bead_dimensions(width_cm, height_cm, bead_width_mm, bead_height_mm)
+        width_beads, height_beads = calculate_bead_dimensions(width_cm, height_cm, bead_size_mm)
         
         # AGREGAR ESTE PRINT TEMPORAL
         print(f"🔍 DIAGNÓSTICO:")
@@ -1231,15 +1223,15 @@ def generate_pattern():
         if skip_quantization:
             print(f"🎨 Modo EDICIÓN - regenerando con pattern_type={pattern_type}")
             if pattern_type == 'peyote':
-                grid_pattern = create_peyote_pattern(pattern, cell_size=20, show_grid=False)
+                grid_pattern = create_peyote_pattern(pattern, cell_width=20, cell_height=25, show_grid=False)
             else:
-                grid_pattern = create_grid_pattern(pattern, cell_size=20, show_grid=False)
+                grid_pattern = create_grid_pattern(pattern, cell_width=20, cell_height=25, show_grid=False)
         elif pattern_type == 'peyote':
             print(f"🎨 Generando patrón PEYOTE")
-            grid_pattern = create_peyote_pattern(pattern, cell_size=20, show_grid=False)
+            grid_pattern = create_peyote_pattern(pattern, cell_width=20, cell_height=25, show_grid=False)
         else:
             print(f"🎨 Generando patrón CUADRÍCULA")
-            grid_pattern = create_grid_pattern(pattern, cell_size=20, show_grid=False)
+            grid_pattern = create_grid_pattern(pattern, cell_width=20, cell_height=25, show_grid=False)
 
         # Analyze colors
         color_analysis = analyze_pattern_colors(pattern, color_mode)
