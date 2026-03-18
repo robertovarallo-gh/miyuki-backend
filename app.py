@@ -1,3 +1,4 @@
+import time
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image, ImageDraw, ImageFont, ImageEnhance
@@ -652,26 +653,32 @@ def color_distance(c1: Tuple[int, int, int], c2: Tuple[int, int, int]) -> float:
     """Calculate Euclidean distance between two RGB colors"""
     return math.sqrt(sum((a - b) ** 2 for a, b in zip(c1, c2)))
 
+_closest_color_cache = {}  # Cache para evitar recalcular colores ya vistos
+
 def find_closest_color(target_color: Tuple[int, int, int], color_mode: str = 'miyuki'):
-    """Find closest color in the selected palette"""
-    # print(f"🎨 find_closest_color llamado con mode: '{color_mode}'")
+    """Find closest color in the selected palette (with cache)"""
+    cache_key = (target_color, color_mode)
+    if cache_key in _closest_color_cache:
+        return _closest_color_cache[cache_key]
+
     palette = MIYUKI_COLORS if color_mode == 'miyuki' else RGB_UNIVERSAL_COLORS
-    # print(f"📦 Usando paleta: {'MIYUKI' if color_mode == 'miyuki' else 'RGB'} con {len(palette)} colores")
-    
+
     if target_color in palette:
-        return palette[target_color]
-    
+        result = palette[target_color]
+        _closest_color_cache[cache_key] = result
+        return result
+
     min_distance = float('inf')
     closest_color = None
-    
+
     for color_rgb, color_info in palette.items():
         distance = color_distance(target_color, color_rgb)
         if distance < min_distance:
             min_distance = distance
             closest_color = color_info
-    
-    # Return default based on mode
+
     if closest_color:
+        _closest_color_cache[cache_key] = closest_color
         return closest_color
     elif color_mode == 'miyuki':
         return ColorInfo("???", "Color desconocido", "???", target_color)
@@ -683,19 +690,12 @@ def find_closest_color(target_color: Tuple[int, int, int], color_mode: str = 'mi
 # IMAGE PROCESSING FUNCTIONS
 # ============================================================================
 
-BEAD_TYPES = {
-    'delica': {'bead_width_mm': 1.3, 'bead_height_mm': 1.6},
-}
-
-def get_bead_dimensions_mm(bead_type: str):
-    """Return (bead_width_mm, bead_height_mm) for a given bead type."""
-    bead = BEAD_TYPES.get(bead_type, BEAD_TYPES['delica'])
-    return bead['bead_width_mm'], bead['bead_height_mm']
-
-def calculate_bead_dimensions(width_cm: float, height_cm: float, bead_width_mm: float, bead_height_mm: float) -> Tuple[int, int]:
+def calculate_bead_dimensions(width_cm: float, height_cm: float, bead_size_mm: float) -> Tuple[int, int]:
     """Calculate pattern dimensions in beads"""
-    width_beads = round((width_cm * 10) / bead_width_mm)
-    height_beads = round((height_cm * 10) / bead_height_mm)
+    width_mm = width_cm * 10
+    height_mm = height_cm * 10
+    width_beads = round(width_mm / bead_size_mm)
+    height_beads = round(height_mm / bead_size_mm)
     return width_beads, height_beads
 
 def pixelate_image(image: Image.Image, target_width: int, target_height: int, num_colors: int = 10, 
@@ -765,12 +765,12 @@ def pixelate_image(image: Image.Image, target_width: int, target_height: int, nu
 
     selected_colors = np.array(selected_colors)  # ← Cambiar nombre
 
-    # Step 3: Map each pixel to closest selected color
-    result_pixels = np.zeros_like(pixels_flat)
-    for i, pixel in enumerate(pixels_flat):
-        distances = np.sqrt(np.sum((selected_colors - pixel) ** 2, axis=1))  # ← Cambiar nombre
-        closest_idx = np.argmin(distances)
-        result_pixels[i] = selected_colors[closest_idx]  # ← Cambiar nombre
+    # Step 3: Map each pixel to closest selected color (vectorized)
+    # Shape: (n_pixels, 1, 3) - (1, n_colors, 3) → (n_pixels, n_colors, 3)
+    diff = pixels_flat[:, np.newaxis, :].astype(np.float32) - selected_colors[np.newaxis, :, :].astype(np.float32)
+    distances = np.sum(diff ** 2, axis=2)  # No sqrt needed — solo comparamos, es monotónico
+    closest_idx = np.argmin(distances, axis=1)
+    result_pixels = selected_colors[closest_idx]
 
     # Reshape back to image
     result_pixels = result_pixels.reshape(original_shape).astype(np.uint8)
@@ -903,16 +903,15 @@ def generate_row_guide(pattern: Image.Image, color_mode: str = 'miyuki') -> dict
     for y in range(height):
         row_pixels = [pattern.getpixel((x, y)) for x in range(width)]
         
+        # Resolve color codes once per pixel (cache hace el resto eficiente)
+        row_codes = [find_closest_color(tuple(int(c) for c in px), color_mode).code for px in row_pixels]
+
         # Build exact sequence (left to right)
         sequence = []
         current_code = None
         current_count = 0
-        
-        for pixel in row_pixels:
-            color_tuple = tuple(int(c) for c in pixel)
-            color_info = find_closest_color(color_tuple, color_mode)
-            code = color_info.code
-            
+
+        for code in row_codes:
             if code == current_code:
                 current_count += 1
             else:
@@ -920,18 +919,15 @@ def generate_row_guide(pattern: Image.Image, color_mode: str = 'miyuki') -> dict
                     sequence.append({"code": current_code, "count": current_count})
                 current_code = code
                 current_count = 1
-        
+
         if current_code is not None:
             sequence.append({"code": current_code, "count": current_count})
-        
-        # Calculate totals per color
-        row_colors = [tuple(int(c) for c in pixel) for pixel in row_pixels]
+
+        # Calculate totals per color (reusar row_codes ya calculados)
         color_counts = {}
-        for color in row_colors:
-            color_info = find_closest_color(color, color_mode)
-            code = color_info.code
+        for code in row_codes:
             color_counts[code] = color_counts.get(code, 0) + 1
-        
+
         totals = [{"code": code, "count": count} for code, count in color_counts.items()]
         
         rows.append({
@@ -1185,8 +1181,7 @@ def generate_pattern():
         image_data = data.get('image')
         width_cm = float(data.get('width', 5.0))
         height_cm = float(data.get('height', 5.0))
-        bead_type = data.get('beadType', 'delica')
-        bead_width_mm, bead_height_mm = get_bead_dimensions_mm(bead_type)
+        bead_size_mm = float(data.get('beadSize', 1.5))
         show_grid = data.get('showGrid', True)  # ← DEBE ESTAR ESTO
         num_colors = int(data.get('numColors', 10))
         print(f"🔍 Backend recibió showGrid: {show_grid}")
@@ -1209,49 +1204,44 @@ def generate_pattern():
 
         # Calculate dimensions
         width_beads, height_beads = calculate_bead_dimensions(width_cm, height_cm, bead_width_mm, bead_height_mm)
-        
-        # AGREGAR ESTE PRINT TEMPORAL
-        print(f"🔍 DIAGNÓSTICO:")
-        print(f"  - skip_quantization: {skip_quantization}")
-        print(f"  - pattern_type: {pattern_type}")
-        print(f"  - Imagen recibida: {image.size}")
-        print(f"  - width_beads calculado: {width_beads}")
-        print(f"  - height_beads calculado: {height_beads}")
+        t0 = time.time()
+        print(f"🔍 INICIO generación: {width_beads}x{height_beads} beads, mode={color_mode}, skip={skip_quantization}, type={pattern_type}")
 
         # Generate pixelated pattern
         if skip_quantization:
-            # Imagen viene del editor - hacer downsample a dimensiones en beads
             print(f"🎨 Skip quantization - downsampling de {image.size} a ({width_beads}, {height_beads})")
             pattern = image.resize((width_beads, height_beads), Image.NEAREST)
         else:
-            pattern = pixelate_image(image, width_beads, height_beads, num_colors, 
+            pattern = pixelate_image(image, width_beads, height_beads, num_colors,
                                     saturation, brightness, contrast, sharpness, color_mode)
+        print(f"⏱️ pixelate_image: {time.time()-t0:.2f}s"); t1 = time.time()
 
-        # Create pattern images (sin coordenadas - frontend las dibujará)
+        # Create pattern images
         if skip_quantization:
-            print(f"🎨 Modo EDICIÓN - regenerando con pattern_type={pattern_type}")
             if pattern_type == 'peyote':
                 grid_pattern = create_peyote_pattern(pattern, cell_width=20, cell_height=25, show_grid=False)
             else:
                 grid_pattern = create_grid_pattern(pattern, cell_width=20, cell_height=25, show_grid=False)
         elif pattern_type == 'peyote':
-            print(f"🎨 Generando patrón PEYOTE")
             grid_pattern = create_peyote_pattern(pattern, cell_width=20, cell_height=25, show_grid=False)
         else:
-            print(f"🎨 Generando patrón CUADRÍCULA")
             grid_pattern = create_grid_pattern(pattern, cell_width=20, cell_height=25, show_grid=False)
+        print(f"⏱️ create_pattern: {time.time()-t1:.2f}s"); t2 = time.time()
 
         # Analyze colors
         color_analysis = analyze_pattern_colors(pattern, color_mode)
-        
+        print(f"⏱️ analyze_colors: {time.time()-t2:.2f}s"); t3 = time.time()
+
         # Generate row guide
         row_guide = generate_row_guide(pattern, color_mode)
+        print(f"⏱️ row_guide: {time.time()-t3:.2f}s"); t4 = time.time()
         
         # Convert images to base64
         def image_to_base64(img):
             buffer = io.BytesIO()
             img.save(buffer, format='PNG')
             return base64.b64encode(buffer.getvalue()).decode()
+        t5 = time.time()
         
         # Construir respuesta
         response = {
@@ -1270,6 +1260,7 @@ def generate_pattern():
             "pattern_type": pattern_type
         }
         
+        print(f"⏱️ base64: {time.time()-t5:.2f}s | TOTAL: {time.time()-t0:.2f}s")
         return jsonify(response)
         
     except Exception as e:
