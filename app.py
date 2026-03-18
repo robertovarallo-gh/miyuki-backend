@@ -683,12 +683,19 @@ def find_closest_color(target_color: Tuple[int, int, int], color_mode: str = 'mi
 # IMAGE PROCESSING FUNCTIONS
 # ============================================================================
 
-def calculate_bead_dimensions(width_cm: float, height_cm: float, bead_size_mm: float) -> Tuple[int, int]:
+BEAD_TYPES = {
+    'delica': {'bead_width_mm': 1.3, 'bead_height_mm': 1.6},
+}
+
+def get_bead_dimensions_mm(bead_type: str):
+    """Return (bead_width_mm, bead_height_mm) for a given bead type."""
+    bead = BEAD_TYPES.get(bead_type, BEAD_TYPES['delica'])
+    return bead['bead_width_mm'], bead['bead_height_mm']
+
+def calculate_bead_dimensions(width_cm: float, height_cm: float, bead_width_mm: float, bead_height_mm: float) -> Tuple[int, int]:
     """Calculate pattern dimensions in beads"""
-    width_mm = width_cm * 10
-    height_mm = height_cm * 10
-    width_beads = round(width_mm / bead_size_mm)
-    height_beads = round(height_mm / bead_size_mm)
+    width_beads = round((width_cm * 10) / bead_width_mm)
+    height_beads = round((height_cm * 10) / bead_height_mm)
     return width_beads, height_beads
 
 def pixelate_image(image: Image.Image, target_width: int, target_height: int, num_colors: int = 10, 
@@ -1178,7 +1185,8 @@ def generate_pattern():
         image_data = data.get('image')
         width_cm = float(data.get('width', 5.0))
         height_cm = float(data.get('height', 5.0))
-        bead_size_mm = float(data.get('beadSize', 1.5))
+        bead_type = data.get('beadType', 'delica')
+        bead_width_mm, bead_height_mm = get_bead_dimensions_mm(bead_type)
         show_grid = data.get('showGrid', True)  # ← DEBE ESTAR ESTO
         num_colors = int(data.get('numColors', 10))
         print(f"🔍 Backend recibió showGrid: {show_grid}")
@@ -1200,7 +1208,7 @@ def generate_pattern():
         image = Image.open(io.BytesIO(image_bytes))
 
         # Calculate dimensions
-        width_beads, height_beads = calculate_bead_dimensions(width_cm, height_cm, bead_size_mm)
+        width_beads, height_beads = calculate_bead_dimensions(width_cm, height_cm, bead_width_mm, bead_height_mm)
         
         # AGREGAR ESTE PRINT TEMPORAL
         print(f"🔍 DIAGNÓSTICO:")
