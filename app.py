@@ -902,47 +902,73 @@ def analyze_pattern_colors(pattern: Image.Image, color_mode: str = 'miyuki') -> 
         "color_mode": color_mode
     }
 
-def generate_row_guide(pattern: Image.Image, color_mode: str = 'miyuki') -> dict:
-    """Generate row-by-row assembly guide with exact bead sequence"""
+def _build_sequence_and_totals(codes: list) -> tuple:
+    """Build sequence (grouped by color) and totals from a list of color codes."""
+    sequence = []
+    current_code = None
+    current_count = 0
+    for code in codes:
+        if code == current_code:
+            current_count += 1
+        else:
+            if current_code is not None:
+                sequence.append({"code": current_code, "count": current_count})
+            current_code = code
+            current_count = 1
+    if current_code is not None:
+        sequence.append({"code": current_code, "count": current_count})
+
+    color_counts = {}
+    for code in codes:
+        color_counts[code] = color_counts.get(code, 0) + 1
+    totals = [{"code": code, "count": count} for code, count in color_counts.items()]
+    return sequence, totals
+
+
+def generate_row_guide(pattern: Image.Image, color_mode: str = 'miyuki', pattern_type: str = 'grid') -> dict:
+    """Generate row-by-row assembly guide with exact bead sequence.
+    
+    For peyote: generates full rows (even columns, x%2==0) and half-rows (odd columns, x%2==1).
+    Half-rows are labeled as row N.5 (e.g. 1.5, 2.5, ...).
+    """
     width, height = pattern.size
     rows = []
-    
+
     for y in range(height):
         row_pixels = [pattern.getpixel((x, y)) for x in range(width)]
-        
-        # Resolve color codes once per pixel (cache hace el resto eficiente)
         row_codes = [find_closest_color(tuple(int(c) for c in px), color_mode).code for px in row_pixels]
 
-        # Build exact sequence (left to right)
-        sequence = []
-        current_code = None
-        current_count = 0
+        if pattern_type == 'peyote':
+            # Full row: even columns (x % 2 == 0) — no offset
+            full_codes = [row_codes[x] for x in range(width) if x % 2 == 0]
+            sequence_full, totals_full = _build_sequence_and_totals(full_codes)
+            rows.append({
+                "row": y + 1,
+                "row_label": str(y + 1),
+                "sequence": sequence_full,
+                "totals": totals_full
+            })
 
-        for code in row_codes:
-            if code == current_code:
-                current_count += 1
-            else:
-                if current_code is not None:
-                    sequence.append({"code": current_code, "count": current_count})
-                current_code = code
-                current_count = 1
+            # Half row: odd columns (x % 2 == 1) — offset down by half cell
+            half_codes = [row_codes[x] for x in range(width) if x % 2 == 1]
+            if half_codes:
+                sequence_half, totals_half = _build_sequence_and_totals(half_codes)
+                rows.append({
+                    "row": y + 1.5,
+                    "row_label": f"{y + 1}.5",
+                    "sequence": sequence_half,
+                    "totals": totals_half
+                })
+        else:
+            # Grid: all columns left to right
+            sequence, totals = _build_sequence_and_totals(row_codes)
+            rows.append({
+                "row": y + 1,
+                "row_label": str(y + 1),
+                "sequence": sequence,
+                "totals": totals
+            })
 
-        if current_code is not None:
-            sequence.append({"code": current_code, "count": current_count})
-
-        # Calculate totals per color (reusar row_codes ya calculados)
-        color_counts = {}
-        for code in row_codes:
-            color_counts[code] = color_counts.get(code, 0) + 1
-
-        totals = [{"code": code, "count": count} for code, count in color_counts.items()]
-        
-        rows.append({
-            "row": y + 1,
-            "sequence": sequence,
-            "totals": totals
-        })
-    
     return {"rows": rows}
 
 # ============================================================================
@@ -1151,7 +1177,7 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
         
         # Row header
         c.setFont("Helvetica-Bold", 9)
-        c.drawString(30*mm, y, f"{t['row']} {row['row']}:")
+        c.drawString(30*mm, y, f"{t['row']} {row.get('row_label', row['row'])}:")
         
         # Totals
         totals_text = ", ".join([f"{t['code']}:{t['count']}" for t in row['totals']])
@@ -1241,7 +1267,7 @@ def generate_pattern():
         print(f"⏱️ analyze_colors: {time.time()-t2:.2f}s"); t3 = time.time()
 
         # Generate row guide
-        row_guide = generate_row_guide(pattern, color_mode)
+        row_guide = generate_row_guide(pattern, color_mode, pattern_type)
         print(f"⏱️ row_guide: {time.time()-t3:.2f}s"); t4 = time.time()
         
         # Convert images to base64
