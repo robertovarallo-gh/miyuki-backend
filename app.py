@@ -1107,14 +1107,14 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     c.save()
     return buffer.getvalue()
 
-def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str = 'miyuki', lang: str = 'es') -> bytes:
+def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str = 'miyuki', lang: str = 'es', pattern_type: str = 'grid') -> bytes:
     """Generate PDF assembly guide"""
     # Translations
     tr = {
         'es': {
             'domain':   'easycuentas.com',
             'brand':    'Easy Cuentas',
-            'title':    'GUÍA DE MONTAJE POR FILA',
+            'title':    'GUÍA DE MONTAJE POR FILA' + (' (PEYOTE)' if pattern_type == 'peyote' else ' (CUADRÍCULA)'),
             'pattern':  'Patrón',
             'codes':    'Códigos',
             'qty':      'x cantidad',
@@ -1125,7 +1125,7 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
         'en': {
             'domain':   'myeasybeads.com',
             'brand':    'My Easy Beads',
-            'title':    'ROW-BY-ROW ASSEMBLY GUIDE',
+            'title':    'ROW-BY-ROW ASSEMBLY GUIDE' + (' (PEYOTE)' if pattern_type == 'peyote' else ' (GRID)'),
             'pattern':  'Pattern',
             'codes':    'Codes',
             'qty':      'x quantity',
@@ -1329,8 +1329,9 @@ def generate_assembly_guide_endpoint():
         pattern_info = data.get('patternInfo', {})
         color_mode = data.get('colorMode', 'miyuki')
         lang = data.get('lang', 'es')
+        pattern_type = data.get('pattern_type', 'grid')
         
-        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info, color_mode, lang)
+        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info, color_mode, lang, pattern_type)
         pdf_base64 = base64.b64encode(pdf_bytes).decode()
         
         return jsonify({
@@ -1338,6 +1339,47 @@ def generate_assembly_guide_endpoint():
             "pdf": f"data:application/pdf;base64,{pdf_base64}"
         })
     except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/cancel-subscription', methods=['POST'])
+def cancel_subscription():
+    """Cancel a Stripe subscription at period end"""
+    try:
+        data = request.get_json()
+        subscription_id = data.get('subscriptionId')
+        user_id = data.get('userId')
+
+        if not subscription_id or not user_id:
+            return jsonify({"success": False, "error": "Missing subscriptionId or userId"}), 400
+
+        # Cancel at period end — user keeps premium until expiry
+        subscription = stripe.Subscription.modify(
+            subscription_id,
+            cancel_at_period_end=True
+        )
+
+        # Get period end date
+        cancel_date = subscription.current_period_end  # Unix timestamp
+
+        # Update Firestore
+        user_ref = db.collection('users').document(user_id)
+        user_ref.update({
+            'subscriptionStatus': 'canceled',
+            'cancelAt': cancel_date
+        })
+
+        print(f"✅ Suscripción cancelada al final del período: {subscription_id}")
+        return jsonify({
+            "success": True,
+            "cancelAt": cancel_date
+        })
+
+    except stripe.error.StripeError as e:
+        print(f"❌ Stripe error cancelando suscripción: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+    except Exception as e:
+        print(f"❌ Error cancelando suscripción: {e}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/health', methods=['GET'])
