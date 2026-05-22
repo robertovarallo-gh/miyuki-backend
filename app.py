@@ -1459,6 +1459,11 @@ def generate_pattern():
         if skip_quantization:
             print(f"🎨 Skip quantization - downsampling de {image.size} a ({width_beads}, {height_beads})")
             pattern = image.resize((width_beads, height_beads), Image.NEAREST)
+
+            print(f"🔍 Pattern después de resize: {pattern.size}")
+            print(f"🔍 Pixel (0,0): {pattern.getpixel((0,0))}")
+            print(f"🔍 Pixel (1,0): {pattern.getpixel((1,0))}")
+
         else:
             pattern = pixelate_image(image, width_beads, height_beads, num_colors,
                                     saturation, brightness, contrast, sharpness, color_mode)
