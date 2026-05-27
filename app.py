@@ -13,6 +13,7 @@ import io
 import base64
 import math
 import stripe
+import traceback
 import os
 from typing import Tuple
 from rgb_palette import RGB_UNIVERSAL_COLORS, ColorInfo as ColorInfoRGB
@@ -1828,6 +1829,10 @@ def stripe_webhook():
                     print(f"❌ Patrón no encontrado: {pattern_id}")
                 else:
                     pattern_data = pattern_doc.to_dict()
+
+                    print(f"🔍 pattern_data keys: {list(pattern_data.keys())}")
+                    print(f"🔍 colors tipo: {type(pattern_data.get('colors'))}")
+                    print(f"🔍 primer color: {pattern_data.get('colors', {}).get('colors', [{}])[0] if pattern_data.get('colors', {}).get('colors') else 'VACÍO'}")
 
                     # Registrar compra en Firestore
                     db.collection('pattern_purchases').add({
