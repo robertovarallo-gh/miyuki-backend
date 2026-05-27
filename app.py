@@ -1946,6 +1946,7 @@ def stripe_webhook():
 
             except Exception as e:
                 print(f"❌ Error procesando compra de patrón: {e}")
+                print(traceback.format_exc())
 
         else:
             # ── Compra de suscripción (flujo existente) ──────────────
