@@ -1892,6 +1892,7 @@ def stripe_webhook():
                     # Enviar email con Resend
                     import resend
                     resend.api_key = os.environ.get('RESEND_API_KEY')
+                    print(f"🔍 Resend API key: {resend.api_key[:10] if resend.api_key else 'NO ENCONTRADA'}")
 
                     if lang == 'es':
                         subject = f'🎨 Tu patrón "{pattern_name}" - Easy Cuentas'
