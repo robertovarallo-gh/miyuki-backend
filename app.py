@@ -1321,7 +1321,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     c.save()
     return buffer.getvalue()
 
-def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str = 'miyuki', lang: str = 'es', pattern_type: str = 'grid') -> bytes:
+def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str = 'miyuki', lang: str = 'es', pattern_type: str = 'grid', pattern_image: str = None) -> bytes:
     """Generate PDF assembly guide"""
     # Translations
     tr = {
@@ -1410,7 +1410,48 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
     # Footer
     c.setFont("Helvetica-Oblique", 7)
     c.drawString(30*mm, 15*mm, t['footer'])
-    
+
+    # Página final — imagen del patrón
+    if pattern_image:
+        try:
+            img_bytes = base64.b64decode(pattern_image.split(',')[1])
+            img = Image.open(io.BytesIO(img_bytes))
+
+            c.showPage()
+
+            # Header
+            c.setFont("Helvetica-Bold", 14)
+            c.setFillColorRGB(0, 0.808, 0.82)
+            img_title = 'Imagen del Patrón' if lang == 'es' else 'Pattern Image'
+            c.drawString(30*mm, height - 20*mm, img_title)
+            c.setFillColorRGB(0, 0, 0)
+
+            # Calcular dimensiones manteniendo proporción
+            max_w = width - 60*mm
+            max_h = height - 50*mm
+            img_w, img_h = img.size
+            scale = min(max_w / img_w, max_h / img_h)
+            draw_w = img_w * scale
+            draw_h = img_h * scale
+
+            # Centrar horizontalmente
+            x_pos = (width - draw_w) / 2
+            y_pos = height - 35*mm - draw_h
+
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+
+            from reportlab.lib.utils import ImageReader
+            c.drawImage(ImageReader(img_buffer), x_pos, y_pos, width=draw_w, height=draw_h)
+
+            # Footer última página
+            c.setFont("Helvetica-Oblique", 7)
+            c.drawString(30*mm, 15*mm, t['footer'])
+
+        except Exception as e:
+            print(f"⚠️ Error agregando imagen al PDF: {e}")
+
     c.save()
     return buffer.getvalue()
 
@@ -1550,7 +1591,9 @@ def generate_assembly_guide_endpoint():
         lang = data.get('lang', 'es')
         pattern_type = data.get('pattern_type', 'grid')
         
-        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info, color_mode, lang, pattern_type)
+        pattern_image = data.get('patternImage', None)
+        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info, color_mode, lang, pattern_type, pattern_image)
+
         pdf_base64 = base64.b64encode(pdf_bytes).decode()
         
         return jsonify({
