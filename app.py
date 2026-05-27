@@ -1800,39 +1800,180 @@ def stripe_webhook():
     except stripe.error.SignatureVerificationError:
         return jsonify({'error': 'Invalid signature'}), 400
     
-    # Manejar eventos de suscripción
+    # Manejar eventos de pago
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        customer_email = session['customer_email']
-        subscription_id = session['subscription']
-        
-        print(f"✅ Pago exitoso para: {customer_email}")
-        print(f"   Subscription ID: {subscription_id}")
-        
-        try:
-            # Buscar usuario por email en Firestore
-            users_ref = db.collection('users')
-            query = users_ref.where('email', '==', customer_email).limit(1)
-            docs = query.stream()
-            
-            user_doc = None
-            for doc in docs:
-                user_doc = doc
-                break
-            
-            if user_doc:
-                # Actualizar plan a premium
-                users_ref.document(user_doc.id).update({
-                    'plan': 'premium',
-                    'subscriptionId': subscription_id,
-                    'subscriptionStatus': 'active'
-                })
-                print(f"✅ Usuario actualizado a Premium: {user_doc.id}")
-            else:
-                print(f"⚠️ Usuario no encontrado: {customer_email}")
-                
-        except Exception as e:
-            print(f"❌ Error actualizando Firestore: {e}")
+        customer_email = session.get('customer_email') or session.get('customer_details', {}).get('email')
+        metadata = session.get('metadata', {})
+        payment_type = metadata.get('type', 'subscription')
+
+        print(f"✅ Pago completado - tipo: {payment_type} - email: {customer_email}")
+
+        if payment_type == 'pattern_purchase':
+            # ── Compra individual de patrón ──────────────────────────
+            pattern_id = metadata.get('pattern_id')
+            pattern_name = metadata.get('pattern_name')
+            buyer_email = metadata.get('buyer_email') or customer_email
+            user_plan = metadata.get('user_plan', 'free')
+            lang = 'en' if 'myeasybeads' in session.get('success_url', '') else 'es'
+
+            print(f"   Patrón: {pattern_name} ({pattern_id}) → {buyer_email}")
+
+            try:
+                # Obtener datos del patrón desde Firestore
+                pattern_ref = db.collection('patterns').document(pattern_id)
+                pattern_doc = pattern_ref.get()
+
+                if not pattern_doc.exists:
+                    print(f"❌ Patrón no encontrado: {pattern_id}")
+                else:
+                    pattern_data = pattern_doc.to_dict()
+
+                    # Registrar compra en Firestore
+                    db.collection('pattern_purchases').add({
+                        'patternId': pattern_id,
+                        'patternName': pattern_name,
+                        'buyerEmail': buyer_email,
+                        'userPlan': user_plan,
+                        'amount': session.get('amount_total', 0),
+                        'currency': session.get('currency', 'usd'),
+                        'purchasedAt': firestore.SERVER_TIMESTAMP,
+                        'sessionId': session.get('id'),
+                    })
+
+                    # Registrar en usuario si tiene cuenta
+                    users_ref = db.collection('users')
+                    query = users_ref.where('email', '==', buyer_email).limit(1)
+                    user_docs = list(query.stream())
+                    if user_docs:
+                        user_doc = user_docs[0]
+                        existing = user_doc.to_dict().get('purchasedPatterns', [])
+                        if pattern_id not in existing:
+                            users_ref.document(user_doc.id).update({
+                                'purchasedPatterns': existing + [pattern_id]
+                            })
+
+                    # Generar PDFs
+                    colors = pattern_data.get('colors', {}).get('colors', [])
+                    rows = pattern_data.get('rowGuide', {}).get('rows', [])
+                    pattern_info = {
+                        'width': pattern_data.get('width', 0),
+                        'height': pattern_data.get('height', 0),
+                        'total_beads': pattern_data.get('total_beads', 0),
+                    }
+                    pattern_type = pattern_data.get('patternType', 'grid')
+                    pattern_image = pattern_data.get('imageData') or pattern_data.get('thumbnail')
+
+                    pdf_colors = generate_color_guide_pdf(colors, pattern_info, 'miyuki', lang)
+                    pdf_assembly = generate_assembly_guide_pdf(rows, pattern_info, 'miyuki', lang, pattern_type, pattern_image)
+
+                    # Encodar PDFs en base64 para email
+                    pdf_colors_b64 = base64.b64encode(pdf_colors).decode()
+                    pdf_assembly_b64 = base64.b64encode(pdf_assembly).decode()
+
+                    # Encodar JSON del patrón
+                    import json as json_module
+                    pattern_json = {
+                        'version': '2.0',
+                        'pattern': {'width': pattern_info['width'], 'height': pattern_info['height'], 'total_beads': pattern_info['total_beads'], 'pattern_type': pattern_type},
+                        'images': {'grid': pattern_data.get('imageData', ''), 'basic': pattern_data.get('basicImage', '')},
+                        'colors': pattern_data.get('colors', {}),
+                        'rowGuide': pattern_data.get('rowGuide', {}),
+                        'settings': pattern_data.get('settings', {}),
+                        'editedPattern': pattern_data.get('editedPattern', ''),
+                    }
+                    pattern_json_b64 = base64.b64encode(json_module.dumps(pattern_json).encode()).decode()
+
+                    # Enviar email con Resend
+                    import resend
+                    resend.api_key = os.environ.get('RESEND_API_KEY')
+
+                    if lang == 'es':
+                        subject = f'🎨 Tu patrón "{pattern_name}" - Easy Cuentas'
+                        body_html = f"""
+                        <h2>¡Gracias por tu compra!</h2>
+                        <p>Aquí tienes tu patrón <strong>{pattern_name}</strong>.</p>
+                        <p>En los archivos adjuntos encontrarás:</p>
+                        <ul>
+                            <li>📊 Guía de colores (PDF)</li>
+                            <li>📋 Guía de montaje con imagen (PDF)</li>
+                            <li>💾 Archivo JSON para usar en la app</li>
+                        </ul>
+                        <hr>
+                        <p>¿Sabías que con <strong>Easy Cuentas Premium</strong> tienes acceso a todos los patrones + puedes crear los tuyos desde fotos?</p>
+                        <p><a href="https://easycuentas.com">👉 Conoce el plan Premium</a></p>
+                        <p>¡Gracias por apoyar Easy Cuentas!</p>
+                        """
+                    else:
+                        subject = f'🎨 Your pattern "{pattern_name}" - My Easy Beads'
+                        body_html = f"""
+                        <h2>Thank you for your purchase!</h2>
+                        <p>Here is your pattern <strong>{pattern_name}</strong>.</p>
+                        <p>You'll find the following attachments:</p>
+                        <ul>
+                            <li>📊 Color guide (PDF)</li>
+                            <li>📋 Assembly guide with image (PDF)</li>
+                            <li>💾 JSON file to use in the app</li>
+                        </ul>
+                        <hr>
+                        <p>Did you know that with <strong>My Easy Beads Premium</strong> you get access to all patterns + create your own from photos?</p>
+                        <p><a href="https://myeasybeads.com">👉 Learn about Premium</a></p>
+                        <p>Thank you for supporting My Easy Beads!</p>
+                        """
+
+                    resend.Emails.send({
+                        'from': 'noreply@easycuentas.com',
+                        'to': buyer_email,
+                        'subject': subject,
+                        'html': body_html,
+                        'attachments': [
+                            {
+                                'filename': f'{pattern_name}_guia_colores.pdf',
+                                'content': pdf_colors_b64,
+                            },
+                            {
+                                'filename': f'{pattern_name}_guia_montaje.pdf',
+                                'content': pdf_assembly_b64,
+                            },
+                            {
+                                'filename': f'{pattern_name}.json',
+                                'content': pattern_json_b64,
+                            },
+                        ]
+                    })
+
+                    print(f"✅ Email enviado a {buyer_email} con patrón {pattern_name}")
+
+            except Exception as e:
+                print(f"❌ Error procesando compra de patrón: {e}")
+
+        else:
+            # ── Compra de suscripción (flujo existente) ──────────────
+            subscription_id = session.get('subscription')
+            print(f"   Subscription ID: {subscription_id}")
+
+            try:
+                users_ref = db.collection('users')
+                query = users_ref.where('email', '==', customer_email).limit(1)
+                docs = query.stream()
+
+                user_doc = None
+                for doc in docs:
+                    user_doc = doc
+                    break
+
+                if user_doc:
+                    users_ref.document(user_doc.id).update({
+                        'plan': 'premium',
+                        'subscriptionId': subscription_id,
+                        'subscriptionStatus': 'active'
+                    })
+                    print(f"✅ Usuario actualizado a Premium: {user_doc.id}")
+                else:
+                    print(f"⚠️ Usuario no encontrado: {customer_email}")
+
+            except Exception as e:
+                print(f"❌ Error actualizando Firestore: {e}")
 
     elif event['type'] == 'customer.subscription.deleted':
         subscription = event['data']['object']
@@ -1865,6 +2006,57 @@ def stripe_webhook():
             print(f"❌ Error downgrading usuario: {e}")
                
     return jsonify({'status': 'success'}), 200
+
+@app.route('/api/create-pattern-purchase', methods=['POST'])
+def create_pattern_purchase():
+    """Create Stripe checkout session for individual pattern purchase"""
+    try:
+        data = request.get_json()
+        pattern_id = data.get('patternId')
+        pattern_name = data.get('patternName')
+        buyer_email = data.get('email')
+        user_plan = data.get('userPlan', 'free')  # 'free', 'premium_monthly', 'premium_yearly'
+
+        # Precio según plan
+        unit_amount = 100 if user_plan in ['premium_monthly'] else 200  # en centavos USD
+
+        origin = request.headers.get('Origin', 'https://easycuentas.com')
+        if 'myeasybeads' in origin:
+            base_url = 'https://myeasybeads.com'
+        else:
+            base_url = 'https://easycuentas.com'
+
+        checkout_session = stripe.checkout.Session.create(
+            customer_email=buyer_email,
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'unit_amount': unit_amount,
+                    'product_data': {
+                        'name': f'Patrón: {pattern_name}',
+                        'description': 'Incluye PDF guía de colores, PDF guía de montaje y archivo JSON',
+                    },
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=f'{base_url}/?purchase=success',
+            cancel_url=f'{base_url}/?purchase=cancel',
+            metadata={
+                'type': 'pattern_purchase',
+                'pattern_id': pattern_id,
+                'pattern_name': pattern_name,
+                'buyer_email': buyer_email,
+                'user_plan': user_plan,
+            }
+        )
+
+        return jsonify({'sessionId': checkout_session.id})
+
+    except Exception as e:
+        print(f"❌ Error creando sesión de compra: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     print("=" * 60)
