@@ -1411,41 +1411,102 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
     c.setFont("Helvetica-Oblique", 7)
     c.drawString(30*mm, 15*mm, t['footer'])
 
-    # Página final — imagen del patrón
+    # Páginas finales — imagen del patrón
     if pattern_image:
         try:
             img_bytes = base64.b64decode(pattern_image.split(',')[1])
-            img = Image.open(io.BytesIO(img_bytes))
+            img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+            img_w, img_h = img.size
 
+            # Dimensiones de celda (coinciden con el grid visual)
+            cell_w = 20
+            cell_h = 25
+            beads_w = img_w // cell_w
+            beads_h = img_h // cell_h
+
+            # ── PÁGINA 1: Imagen limpia ──────────────────────────────
             c.showPage()
-
-            # Header
             c.setFont("Helvetica-Bold", 14)
             c.setFillColorRGB(0, 0.808, 0.82)
             img_title = 'Imagen del Patrón' if lang == 'es' else 'Pattern Image'
             c.drawString(30*mm, height - 20*mm, img_title)
             c.setFillColorRGB(0, 0, 0)
 
-            # Calcular dimensiones manteniendo proporción
             max_w = width - 60*mm
             max_h = height - 50*mm
-            img_w, img_h = img.size
             scale = min(max_w / img_w, max_h / img_h)
             draw_w = img_w * scale
             draw_h = img_h * scale
-
-            # Centrar horizontalmente
             x_pos = (width - draw_w) / 2
             y_pos = height - 35*mm - draw_h
 
             img_buffer = io.BytesIO()
             img.save(img_buffer, format='PNG')
             img_buffer.seek(0)
-
             from reportlab.lib.utils import ImageReader
             c.drawImage(ImageReader(img_buffer), x_pos, y_pos, width=draw_w, height=draw_h)
 
-            # Footer última página
+            c.setFont("Helvetica-Oblique", 7)
+            c.drawString(30*mm, 15*mm, t['footer'])
+
+            # ── PÁGINA 2: Imagen con grid + ejes ────────────────────
+            c.showPage()
+            c.setFont("Helvetica-Bold", 14)
+            c.setFillColorRGB(0, 0.808, 0.82)
+            grid_title = 'Imagen con Guía de Montaje' if lang == 'es' else 'Pattern with Assembly Guide'
+            c.drawString(30*mm, height - 20*mm, grid_title)
+            c.setFillColorRGB(0, 0, 0)
+
+            # Margen para ejes
+            axis_margin = 12*mm
+            max_w2 = width - 60*mm - axis_margin
+            max_h2 = height - 55*mm - axis_margin
+            scale2 = min(max_w2 / img_w, max_h2 / img_h)
+            draw_w2 = img_w * scale2
+            draw_h2 = img_h * scale2
+            x_pos2 = 30*mm + axis_margin
+            y_pos2 = height - 38*mm - draw_h2
+
+            # Dibujar imagen con grid
+            img_grid = img.copy()
+            draw_img = ImageDraw.Draw(img_grid)
+            grid_color = (210, 210, 210)
+
+            for x in range(0, img_w + 1, cell_w):
+                draw_img.line([(x, 0), (x, img_h)], fill=grid_color, width=1)
+            for y in range(0, img_h + 1, cell_h):
+                draw_img.line([(0, y), (img_w, y)], fill=grid_color, width=1)
+
+            img_grid_buf = io.BytesIO()
+            img_grid.save(img_grid_buf, format='PNG')
+            img_grid_buf.seek(0)
+            c.drawImage(ImageReader(img_grid_buf), x_pos2, y_pos2, width=draw_w2, height=draw_h2)
+
+            # Eje X superior — números de columna
+            c.setFont("Helvetica", 4)
+            cell_draw_w = draw_w2 / beads_w
+            for col in range(beads_w):
+                x_label = x_pos2 + (col + 0.5) * cell_draw_w
+                y_label = y_pos2 + draw_h2 + 2*mm
+                c.drawCentredString(x_label, y_label, str(col + 1))
+
+            # Eje Y izquierdo — números de fila
+            cell_draw_h = draw_h2 / beads_h
+            if pattern_type == 'peyote':
+                # Filas enteras y semifilas intercaladas
+                for row_idx in range(beads_h):
+                    # Fila entera
+                    y_label = y_pos2 + draw_h2 - (row_idx + 0.5) * cell_draw_h
+                    c.drawRightString(x_pos2 - 1*mm, y_label - 1.5, str(row_idx + 1))
+                    # Semifila
+                    y_label_half = y_pos2 + draw_h2 - (row_idx + 1.0) * cell_draw_h
+                    if row_idx < beads_h - 1:
+                        c.drawRightString(x_pos2 - 1*mm, y_label_half - 1.5, f"{row_idx + 1}.5")
+            else:
+                for row_idx in range(beads_h):
+                    y_label = y_pos2 + draw_h2 - (row_idx + 0.5) * cell_draw_h
+                    c.drawRightString(x_pos2 - 1*mm, y_label - 1.5, str(row_idx + 1))
+
             c.setFont("Helvetica-Oblique", 7)
             c.drawString(30*mm, 15*mm, t['footer'])
 
