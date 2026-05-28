@@ -1285,23 +1285,33 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
             c.setFont("Helvetica", 8)
         
         # Color swatch
-        c.setFillColorRGB(color['rgb'][0]/255, color['rgb'][1]/255, color['rgb'][2]/255)
+        rgb = color.get('rgb', [128, 128, 128])
+        c.setFillColorRGB(rgb[0]/255, rgb[1]/255, rgb[2]/255)
+
         c.rect(30*mm, y-3*mm, 15*mm, 4*mm, fill=1, stroke=1)
 
         # Text - alineado verticalmente con la caja
-        text_y = y - 1.9*mm  # Centrar texto con la caja
+        text_y = y - 1.9*mm
         c.setFillColorRGB(0, 0, 0)
-        c.drawString(50*mm, text_y, str(color.get('code', '')))
-        name = color.get('name') or color.get('name_es') or color.get('name_en', '')
-        c.drawString(80*mm, text_y, name[:25])
 
+        # code — siempre existe
+        code = str(color.get('code', ''))
+        c.drawString(50*mm, text_y, code)
+
+        # name — puede ser name, name_es o name_en
+        name = color.get('name') or color.get('name_es') or color.get('name_en', '')
+        c.drawString(80*mm, text_y, str(name)[:25])
+
+        # miyuki o hex — depende del tipo de color
         if color_mode == 'miyuki':
-            miyuki = color.get('miyuki') or color.get('miyuki_code') or color.get('code', '')
-            c.drawString(130*mm, text_y, str(miyuki))
+            miyuki = color.get('miyuki') or color.get('miyuki_code', '')
+            # Si no tiene miyuki (color RGB), mostrar el code
+            c.drawString(130*mm, text_y, str(miyuki) if miyuki else code)
         else:
             c.drawString(130*mm, text_y, color.get('hex', ''))
 
-        c.drawString(165*mm, text_y, str(color.get('count', 0)))
+        # count y percentage — siempre existen pero pueden ser string o int
+        c.drawString(165*mm, text_y, str(int(color.get('count', 0))))
         c.drawString(185*mm, text_y, f"{color.get('percentage', 0)}%")
 
         # AGREGAR: Línea separadora
