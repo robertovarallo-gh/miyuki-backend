@@ -1897,6 +1897,10 @@ def stripe_webhook():
                     if lang == 'es':
                         subject = f'🎨 Tu patrón "{pattern_name}" - Easy Cuentas'
                         body_html = f"""
+                        <div style="text-align:center; margin-bottom:20px;">
+                            <img src="https://drive.google.com/uc?export=view&id=14BshMtyrHToK1wMCEHYZSWDMp4EDZDzF" 
+                                 alt="Easy Cuentas" style="height:60px;">
+                        </div>
                         <h2>¡Gracias por tu compra!</h2>
                         <p>Aquí tienes tu patrón <strong>{pattern_name}</strong>.</p>
                         <p>En los archivos adjuntos encontrarás:</p>
@@ -1913,6 +1917,10 @@ def stripe_webhook():
                     else:
                         subject = f'🎨 Your pattern "{pattern_name}" - My Easy Beads'
                         body_html = f"""
+                        <div style="text-align:center; margin-bottom:20px;">
+                            <img src="https://drive.google.com/uc?export=view&id=14BshMtyrHToK1wMCEHYZSWDMp4EDZDzF" 
+                                 alt="My Easy Beads" style="height:60px;">
+                        </div>
                         <h2>Thank you for your purchase!</h2>
                         <p>Here is your pattern <strong>{pattern_name}</strong>.</p>
                         <p>You'll find the following attachments:</p>
