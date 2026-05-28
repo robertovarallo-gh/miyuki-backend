@@ -1899,7 +1899,7 @@ def stripe_webhook():
                         body_html = f"""
                         <div style="text-align:center; margin-bottom:20px;">
                             <img src="https://drive.google.com/uc?export=view&id=14BshMtyrHToK1wMCEHYZSWDMp4EDZDzF" 
-                                 alt="Easy Cuentas" style="height:60px;">
+                                 alt="Easy Cuentas" style="height:60px; display:block;">
                         </div>
                         <h2>¡Gracias por tu compra!</h2>
                         <p>Aquí tienes tu patrón <strong>{pattern_name}</strong>.</p>
@@ -1920,7 +1920,7 @@ def stripe_webhook():
                         body_html = f"""
                         <div style="text-align:center; margin-bottom:20px;">
                             <img src="https://drive.google.com/uc?export=view&id=14BshMtyrHToK1wMCEHYZSWDMp4EDZDzF" 
-                                 alt="My Easy Beads" style="height:60px;">
+                                 alt="My Easy Beads" style="height:60px; display:block;">
                         </div>
                         <h2>Thank you for your purchase!</h2>
                         <p>Here is your pattern <strong>{pattern_name}</strong>.</p>
