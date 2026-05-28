@@ -1911,6 +1911,7 @@ def stripe_webhook():
                         </ul>
                         <hr>
                         <p>¿Sabías que con <strong>Easy Cuentas Premium</strong> tienes acceso a todos los patrones + puedes crear los tuyos desde fotos?</p>
+                        <p>Y con el archivo JSON adjunto puedes editar el patrón directamente en la app — inclusive cambiar colores (¡más de 600 disponibles!).</p>
                         <p><a href="https://easycuentas.com">👉 Conoce el plan Premium</a></p>
                         <p>¡Gracias por apoyar Easy Cuentas!</p>
                         """
@@ -1931,6 +1932,7 @@ def stripe_webhook():
                         </ul>
                         <hr>
                         <p>Did you know that with <strong>My Easy Beads Premium</strong> you get access to all patterns + create your own from photos?</p>
+                        <p>And with the JSON file attached, you can edit the pattern directly in the app — even change colors (more than 600 available!).</p>
                         <p><a href="https://myeasybeads.com">👉 Learn about Premium</a></p>
                         <p>Thank you for supporting My Easy Beads!</p>
                         """
