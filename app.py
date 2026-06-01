@@ -2099,6 +2099,98 @@ def create_pattern_purchase():
         print(f"❌ Error creando sesión de compra: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/use-gallery-pattern', methods=['POST'])
+def use_gallery_pattern():
+    """Check and consume a credit when user loads a gallery pattern"""
+    try:
+        data = request.get_json()
+        user_id = data.get('userId')
+        pattern_id = data.get('patternId')
+        user_plan = data.get('userPlan', 'free')  # 'free', 'premium_monthly', 'premium_yearly'
+
+        if not user_id or not pattern_id:
+            return jsonify({"success": False, "error": "Missing userId or patternId"}), 400
+
+        # Premium anual — acceso ilimitado
+        if user_plan == 'premium_yearly':
+            return jsonify({"success": True, "unlimited": True})
+
+        # Obtener datos del usuario
+        user_ref = db.collection('users').document(user_id)
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+            return jsonify({"success": False, "error": "User not found"}), 404
+
+        user_data = user_doc.to_dict()
+
+        # Verificar si el patrón ya fue desbloqueado antes
+        used_patterns = user_data.get('usedPatterns', [])
+        purchased_patterns = user_data.get('purchasedPatterns', [])
+
+        if pattern_id in used_patterns or pattern_id in purchased_patterns:
+            # Ya desbloqueado — acceso directo sin consumir crédito
+            return jsonify({"success": True, "already_unlocked": True})
+
+        # Verificar y resetear contador mensual si es necesario
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        reset_timestamp = user_data.get('monthlyUsedPatternsReset')
+
+        monthly_used = user_data.get('monthlyUsedPatterns', [])
+
+        if reset_timestamp:
+            # Convertir timestamp de Firestore a datetime
+            if hasattr(reset_timestamp, 'timestamp'):
+                reset_dt = datetime.fromtimestamp(reset_timestamp.timestamp(), tz=timezone.utc)
+            else:
+                reset_dt = reset_timestamp
+            
+            # Si ya pasó un mes, resetear
+            if now >= reset_dt:
+                monthly_used = []
+
+        # Verificar límite mensual (solo para premium mensual)
+        if user_plan == 'premium_monthly':
+            if len(monthly_used) >= 5:
+                return jsonify({
+                    "success": False,
+                    "limit_exceeded": True,
+                    "monthly_used": len(monthly_used),
+                    "monthly_limit": 5
+                })
+
+            # Consumir crédito
+            from datetime import timedelta
+            next_reset = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            if next_reset.month == 12:
+                next_reset = next_reset.replace(year=next_reset.year + 1, month=1)
+            else:
+                next_reset = next_reset.replace(month=next_reset.month + 1)
+
+            user_ref.update({
+                'usedPatterns': used_patterns + [pattern_id],
+                'monthlyUsedPatterns': monthly_used + [pattern_id],
+                'monthlyUsedPatternsReset': next_reset
+            })
+
+            return jsonify({
+                "success": True,
+                "monthly_used": len(monthly_used) + 1,
+                "monthly_limit": 5
+            })
+
+        # Free — no tiene acceso a patrones premium de galería
+        return jsonify({
+            "success": False,
+            "no_access": True
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"❌ Error en use-gallery-pattern: {e}")
+        print(traceback.format_exc())
+        return jsonify({"success": False, "error": str(e)}), 500
+
 if __name__ == '__main__':
     print("=" * 60)
     print("🎨 MIYUKI PATTERN GENERATOR - STARTED")
