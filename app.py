@@ -2004,8 +2004,19 @@ def stripe_webhook():
                     break
 
                 if user_doc:
+                    # Determinar si es mensual o anual
+                    plan_type = 'premium_monthly'
+                    try:
+                        sub = stripe.Subscription.retrieve(subscription_id)
+                        interval = sub['items']['data'][0]['price']['recurring']['interval']
+                        if interval == 'year':
+                            plan_type = 'premium_yearly'
+                    except:
+                        pass
+
                     users_ref.document(user_doc.id).update({
                         'plan': 'premium',
+                        'planType': plan_type,
                         'subscriptionId': subscription_id,
                         'subscriptionStatus': 'active'
                     })
