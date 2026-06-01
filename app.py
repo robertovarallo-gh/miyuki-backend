@@ -2119,6 +2119,7 @@ def use_gallery_pattern():
         pattern_id = data.get('patternId')
         user_plan = data.get('userPlan', 'free')  # 'free', 'premium_monthly', 'premium_yearly'
 
+        print(f"🔍 use-gallery-pattern: userId={user_id}, patternId={pattern_id}, plan={user_plan}")
         if not user_id or not pattern_id:
             return jsonify({"success": False, "error": "Missing userId or patternId"}), 400
 
