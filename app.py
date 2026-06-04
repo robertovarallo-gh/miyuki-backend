@@ -1446,12 +1446,14 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
             c.setFillColorRGB(0, 0, 0)
 
             max_w = width - 60*mm
-            max_h = height - 50*mm
+            max_h = height - 65*mm  # más margen para evitar solapamiento con footer
             scale = min(max_w / img_w, max_h / img_h)
             draw_w = img_w * scale
             draw_h = img_h * scale
             x_pos = (width - draw_w) / 2
             y_pos = height - 35*mm - draw_h
+            # Asegurar que no baje del margen inferior
+            y_pos = max(25*mm, y_pos)
 
             img_buffer = io.BytesIO()
             img.save(img_buffer, format='PNG')
