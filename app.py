@@ -1486,15 +1486,36 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
             x_pos2 = 30*mm + axis_margin
             y_pos2 = height - 38*mm - draw_h2
 
-            # Dibujar imagen con grid
-            img_grid = img.copy()
-            draw_img = ImageDraw.Draw(img_grid)
+            # Regenerar imagen con grid correcto según tipo de patrón
             grid_color = (210, 210, 210)
 
-            for x in range(0, img_w + 1, cell_w):
-                draw_img.line([(x, 0), (x, img_h)], fill=grid_color, width=1)
-            for y in range(0, img_h + 1, cell_h):
-                draw_img.line([(0, y), (img_w, y)], fill=grid_color, width=1)
+            if pattern_type == 'peyote':
+                # Obtener imagen basic (1px por bead) desde la imagen visual
+                basic_img = img.resize((beads_w, beads_h), Image.NEAREST)
+                # Regenerar con offset peyote correcto
+                canvas_h_peyote = int((beads_h + 0.5) * cell_h)
+                img_grid = Image.new('RGB', (beads_w * cell_w, canvas_h_peyote), 'white')
+                draw_img = ImageDraw.Draw(img_grid)
+                for y in range(beads_h):
+                    for x in range(beads_w):
+                        color = basic_img.getpixel((x, y))
+                        offset_y = (cell_h // 2) if (x % 2 == 1) else 0
+                        draw_img.rectangle([x*cell_w, y*cell_h+offset_y, x*cell_w+cell_w-1, y*cell_h+offset_y+cell_h-1], fill=color)
+                # Agregar grid encima
+                draw_img2 = ImageDraw.Draw(img_grid)
+                for x in range(0, img_w + 1, cell_w):
+                    draw_img2.line([(x, 0), (x, canvas_h_peyote)], fill=grid_color, width=1)
+                for row_y in range(beads_h + 1):
+                    draw_img2.line([(0, row_y * cell_h), (img_w, row_y * cell_h)], fill=grid_color, width=1)
+                    draw_img2.line([(0, row_y * cell_h + cell_h//2), (img_w, row_y * cell_h + cell_h//2)], fill=grid_color, width=1)
+                img_w, img_h = img_grid.size
+            else:
+                img_grid = img.copy()
+                draw_img = ImageDraw.Draw(img_grid)
+                for x in range(0, img_w + 1, cell_w):
+                    draw_img.line([(x, 0), (x, img_h)], fill=grid_color, width=1)
+                for y in range(0, img_h + 1, cell_h):
+                    draw_img.line([(0, y), (img_w, y)], fill=grid_color, width=1)
 
             img_grid_buf = io.BytesIO()
             img_grid.save(img_grid_buf, format='PNG')
