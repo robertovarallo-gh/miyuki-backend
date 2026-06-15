@@ -1431,6 +1431,23 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
             img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
             img_w, img_h = img.size
 
+            # Para peyote, regenerar imagen con offset correcto desde basicImage
+            basic_image = data.get('basicImage')
+            if pattern_type == 'peyote' and basic_image:
+                basic_bytes = base64.b64decode(basic_image.split(',')[1])
+                basic_img = Image.open(io.BytesIO(basic_bytes)).convert('RGB')
+                bw, bh = basic_img.size
+                canvas_h_peyote = int((bh + 0.5) * cell_h)
+                peyote_img = Image.new('RGB', (bw * cell_w, canvas_h_peyote), 'white')
+                draw_p = ImageDraw.Draw(peyote_img)
+                for y in range(bh):
+                    for x in range(bw):
+                        color = basic_img.getpixel((x, y))
+                        offset_y = (cell_h // 2) if (x % 2 == 1) else 0
+                        draw_p.rectangle([x*cell_w, y*cell_h+offset_y, x*cell_w+cell_w-1, y*cell_h+offset_y+cell_h-1], fill=color)
+                img = peyote_img
+                img_w, img_h = img.size
+
             # Dimensiones de celda (coinciden con el grid visual)
             cell_w = 20
             cell_h = 25
