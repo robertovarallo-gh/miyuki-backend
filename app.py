@@ -1334,7 +1334,7 @@ def generate_color_guide_pdf(colors: list, pattern_info: dict, color_mode: str =
     c.save()
     return buffer.getvalue()
 
-def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str = 'miyuki', lang: str = 'es', pattern_type: str = 'grid', pattern_image: str = None) -> bytes:
+def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str = 'miyuki', lang: str = 'es', pattern_type: str = 'grid', pattern_image: str = None, basic_image: str = None) -> bytes:
     """Generate PDF assembly guide"""
     # Translations
     tr = {
@@ -1432,7 +1432,6 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
             img_w, img_h = img.size
 
             # Para peyote, regenerar imagen con offset correcto desde basicImage
-            basic_image = data.get('basicImage')
             if pattern_type == 'peyote' and basic_image:
                 basic_bytes = base64.b64decode(basic_image.split(',')[1])
                 basic_img = Image.open(io.BytesIO(basic_bytes)).convert('RGB')
@@ -1710,7 +1709,8 @@ def generate_assembly_guide_endpoint():
         pattern_type = data.get('pattern_type', 'grid')
         
         pattern_image = data.get('patternImage', None)
-        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info, color_mode, lang, pattern_type, pattern_image)
+        basic_image = data.get('basicImage', None)
+        pdf_bytes = generate_assembly_guide_pdf(rows, pattern_info, color_mode, lang, pattern_type, pattern_image, basic_image)
 
         pdf_base64 = base64.b64encode(pdf_bytes).decode()
         
