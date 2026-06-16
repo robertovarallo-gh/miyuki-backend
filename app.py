@@ -1424,55 +1424,18 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
     c.setFont("Helvetica-Oblique", 7)
     c.drawString(30*mm, 15*mm, t['footer'])
 
-    # Páginas finales — imagen del patrón (construida desde basicImage para minimizar memoria)
-    if basic_image:
+    # Páginas finales — imagen del patrón
+    if pattern_image:
         try:
-            from reportlab.lib.utils import ImageReader
+            img_bytes = base64.b64decode(pattern_image.split(',')[1])
+            img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+            img_w, img_h = img.size
 
-            # Decodificar basicImage (1px por bead) — imagen pequeña
-            basic_bytes = base64.b64decode(basic_image.split(',')[1] if ',' in basic_image else basic_image)
-            basic_img = Image.open(io.BytesIO(basic_bytes)).convert('RGB')
-            beads_w, beads_h = basic_img.size
-
-            # Tamaño de celda para el PDF — pequeño para controlar memoria
-            cell_w = 8
-            cell_h = 10
-
-            grid_color = (210, 210, 210)
-
-            def build_pattern_img(with_grid=False):
-                """Construye la imagen del patrón desde basicImage con celdas pequeñas."""
-                if pattern_type == 'peyote':
-                    canvas_h = int((beads_h + 0.5) * cell_h)
-                    img_out = Image.new('RGB', (beads_w * cell_w, canvas_h), 'white')
-                    draw = ImageDraw.Draw(img_out)
-                    for y in range(beads_h):
-                        for x in range(beads_w):
-                            color = basic_img.getpixel((x, y))
-                            offset_y = (cell_h // 2) if (x % 2 == 1) else 0
-                            x0, y0 = x * cell_w, y * cell_h + offset_y
-                            draw.rectangle([x0, y0, x0 + cell_w - 1, y0 + cell_h - 1], fill=color)
-                    if with_grid:
-                        for x in range(beads_w + 1):
-                            draw.line([(x * cell_w, 0), (x * cell_w, canvas_h)], fill=grid_color, width=1)
-                        for y in range(beads_h + 1):
-                            draw.line([(0, y * cell_h), (beads_w * cell_w, y * cell_h)], fill=grid_color, width=1)
-                            draw.line([(0, y * cell_h + cell_h // 2), (beads_w * cell_w, y * cell_h + cell_h // 2)], fill=grid_color, width=1)
-                else:
-                    canvas_h = beads_h * cell_h
-                    img_out = Image.new('RGB', (beads_w * cell_w, canvas_h), 'white')
-                    draw = ImageDraw.Draw(img_out)
-                    for y in range(beads_h):
-                        for x in range(beads_w):
-                            color = basic_img.getpixel((x, y))
-                            x0, y0 = x * cell_w, y * cell_h
-                            draw.rectangle([x0, y0, x0 + cell_w - 1, y0 + cell_h - 1], fill=color)
-                    if with_grid:
-                        for x in range(beads_w + 1):
-                            draw.line([(x * cell_w, 0), (x * cell_w, canvas_h)], fill=grid_color, width=1)
-                        for y in range(beads_h + 1):
-                            draw.line([(0, y * cell_h), (beads_w * cell_w, y * cell_h)], fill=grid_color, width=1)
-                return img_out
+            # Dimensiones de celda (coinciden con el grid visual)
+            cell_w = 20
+            cell_h = 25
+            beads_w = img_w // cell_w
+            beads_h = img_h // cell_h
 
             # ── PÁGINA 1: Imagen limpia ──────────────────────────────
             c.showPage()
@@ -1482,21 +1445,21 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
             c.drawString(30*mm, height - 20*mm, img_title)
             c.setFillColorRGB(0, 0, 0)
 
-            img_clean = build_pattern_img(with_grid=False)
-            img_w, img_h = img_clean.size
             max_w = width - 60*mm
-            max_h = height - 65*mm
+            max_h = height - 65*mm  # más margen para evitar solapamiento con footer
             scale = min(max_w / img_w, max_h / img_h)
             draw_w = img_w * scale
             draw_h = img_h * scale
             x_pos = (width - draw_w) / 2
-            y_pos = max(25*mm, height - 35*mm - draw_h)
+            y_pos = height - 35*mm - draw_h
+            # Asegurar que no baje del margen inferior
+            y_pos = max(25*mm, y_pos)
 
-            buf1 = io.BytesIO()
-            img_clean.save(buf1, format='PNG')
-            buf1.seek(0)
-            c.drawImage(ImageReader(buf1), x_pos, y_pos, width=draw_w, height=draw_h)
-            del img_clean, buf1
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format='PNG')
+            img_buffer.seek(0)
+            from reportlab.lib.utils import ImageReader
+            c.drawImage(ImageReader(img_buffer), x_pos, y_pos, width=draw_w, height=draw_h)
 
             c.setFont("Helvetica-Oblique", 7)
             c.drawString(30*mm, 15*mm, t['footer'])
@@ -1509,22 +1472,53 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
             c.drawString(30*mm, height - 20*mm, grid_title)
             c.setFillColorRGB(0, 0, 0)
 
-            img_grid = build_pattern_img(with_grid=True)
-            img_w2, img_h2 = img_grid.size
+            # Margen para ejes
             axis_margin = 12*mm
             max_w2 = width - 60*mm - axis_margin
             max_h2 = height - 55*mm - axis_margin
-            scale2 = min(max_w2 / img_w2, max_h2 / img_h2)
-            draw_w2 = img_w2 * scale2
-            draw_h2 = img_h2 * scale2
+            scale2 = min(max_w2 / img_w, max_h2 / img_h)
+            draw_w2 = img_w * scale2
+            draw_h2 = img_h * scale2
             x_pos2 = 30*mm + axis_margin
             y_pos2 = height - 38*mm - draw_h2
 
-            buf2 = io.BytesIO()
-            img_grid.save(buf2, format='PNG')
-            buf2.seek(0)
-            c.drawImage(ImageReader(buf2), x_pos2, y_pos2, width=draw_w2, height=draw_h2)
-            del img_grid, buf2
+            # Dibujar imagen con grid
+            grid_color = (210, 210, 210)
+
+            if pattern_type == 'peyote':
+                # Para peyote: regenerar desde basic_image con offset correcto
+                basic_bytes = base64.b64decode(basic_image.split(',')[1] if ',' in basic_image else basic_image)
+                basic_img = Image.open(io.BytesIO(basic_bytes)).convert('RGB')
+                bw, bh = basic_img.size
+                canvas_h_peyote = int((bh + 0.5) * cell_h)
+                img_grid = Image.new('RGB', (bw * cell_w, canvas_h_peyote), 'white')
+                draw_img = ImageDraw.Draw(img_grid)
+                for py in range(bh):
+                    for px in range(bw):
+                        color = basic_img.getpixel((px, py))
+                        offset_y = (cell_h // 2) if (px % 2 == 1) else 0
+                        x0, y0 = px * cell_w, py * cell_h + offset_y
+                        draw_img.rectangle([x0, y0, x0 + cell_w - 1, y0 + cell_h - 1], fill=color, outline=grid_color)
+                img_w_g, img_h_g = img_grid.size
+            else:
+                img_grid = img.copy()
+                draw_img = ImageDraw.Draw(img_grid)
+                for x in range(0, img_w + 1, cell_w):
+                    draw_img.line([(x, 0), (x, img_h)], fill=grid_color, width=1)
+                for y in range(0, img_h + 1, cell_h):
+                    draw_img.line([(0, y), (img_w, y)], fill=grid_color, width=1)
+                img_w_g, img_h_g = img_w, img_h
+
+            # Recalcular scale con dimensiones reales del grid (peyote puede ser diferente)
+            scale2 = min(max_w2 / img_w_g, max_h2 / img_h_g)
+            draw_w2 = img_w_g * scale2
+            draw_h2 = img_h_g * scale2
+            y_pos2 = height - 38*mm - draw_h2
+
+            img_grid_buf = io.BytesIO()
+            img_grid.save(img_grid_buf, format='PNG')
+            img_grid_buf.seek(0)
+            c.drawImage(ImageReader(img_grid_buf), x_pos2, y_pos2, width=draw_w2, height=draw_h2)
 
             # Eje X superior — números de columna
             c.setFont("Helvetica", 4)
@@ -1537,11 +1531,14 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
             # Eje Y izquierdo — números de fila
             cell_draw_h = draw_h2 / beads_h
             if pattern_type == 'peyote':
+                # Filas enteras y semifilas intercaladas
                 for row_idx in range(beads_h):
+                    # Fila entera
                     y_label = y_pos2 + draw_h2 - (row_idx + 0.5) * cell_draw_h
                     c.drawRightString(x_pos2 - 1*mm, y_label - 1.5, str(row_idx + 1))
+                    # Semifila
+                    y_label_half = y_pos2 + draw_h2 - (row_idx + 1.0) * cell_draw_h
                     if row_idx < beads_h - 1:
-                        y_label_half = y_pos2 + draw_h2 - (row_idx + 1.0) * cell_draw_h
                         c.drawRightString(x_pos2 - 1*mm, y_label_half - 1.5, f"{row_idx + 1}.5")
             else:
                 for row_idx in range(beads_h):
