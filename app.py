@@ -1482,34 +1482,36 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
             x_pos2 = 30*mm + axis_margin
             y_pos2 = height - 38*mm - draw_h2
 
-            # Dibujar imagen con grid
+            # Dibujar imagen con grid encima de pattern_image
+            # Para peyote: el offset ya está correcto en pattern_image,
+            # solo hay que dibujar las líneas respetando el offset de columnas impares
+            img_grid = img.copy()
+            draw_img = ImageDraw.Draw(img_grid)
             grid_color = (210, 210, 210)
 
             if pattern_type == 'peyote':
-                # Para peyote: regenerar desde basic_image con offset correcto
-                basic_bytes = base64.b64decode(basic_image.split(',')[1] if ',' in basic_image else basic_image)
-                basic_img = Image.open(io.BytesIO(basic_bytes)).convert('RGB')
-                bw, bh = basic_img.size
-                canvas_h_peyote = int((bh + 0.5) * cell_h)
-                img_grid = Image.new('RGB', (bw * cell_w, canvas_h_peyote), 'white')
-                draw_img = ImageDraw.Draw(img_grid)
-                for py in range(bh):
-                    for px in range(bw):
-                        color = basic_img.getpixel((px, py))
-                        offset_y = (cell_h // 2) if (px % 2 == 1) else 0
-                        x0, y0 = px * cell_w, py * cell_h + offset_y
-                        draw_img.rectangle([x0, y0, x0 + cell_w - 1, y0 + cell_h - 1], fill=color, outline=grid_color)
-                img_w_g, img_h_g = img_grid.size
+                # Columnas verticales — igual para todos
+                for col in range(beads_w + 1):
+                    x = col * cell_w
+                    draw_img.line([(x, 0), (x, img_h)], fill=grid_color, width=1)
+                # Filas horizontales — columnas pares arrancan en 0, impares en cell_h//2
+                for col in range(beads_w):
+                    offset_y = (cell_h // 2) if (col % 2 == 1) else 0
+                    x0 = col * cell_w
+                    x1 = x0 + cell_w
+                    for row in range(beads_h + 1):
+                        y = row * cell_h + offset_y
+                        if y <= img_h:
+                            draw_img.line([(x0, y), (x1, y)], fill=grid_color, width=1)
             else:
-                img_grid = img.copy()
-                draw_img = ImageDraw.Draw(img_grid)
                 for x in range(0, img_w + 1, cell_w):
                     draw_img.line([(x, 0), (x, img_h)], fill=grid_color, width=1)
                 for y in range(0, img_h + 1, cell_h):
                     draw_img.line([(0, y), (img_w, y)], fill=grid_color, width=1)
-                img_w_g, img_h_g = img_w, img_h
 
-            # Recalcular scale con dimensiones reales del grid (peyote puede ser diferente)
+            img_w_g, img_h_g = img_w, img_h
+
+            # Recalcular scale con dimensiones reales del grid
             scale2 = min(max_w2 / img_w_g, max_h2 / img_h_g)
             draw_w2 = img_w_g * scale2
             draw_h2 = img_h_g * scale2
