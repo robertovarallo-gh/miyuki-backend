@@ -1429,6 +1429,15 @@ def generate_assembly_guide_pdf(rows: list, pattern_info: dict, color_mode: str 
         try:
             img_bytes = base64.b64decode(pattern_image.split(',')[1])
             img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+
+            # Reducir tamaño para evitar out of memory en Render
+            MAX_DIM = 1200
+            if img.width > MAX_DIM or img.height > MAX_DIM:
+                scale = MIN_DIM / max(img.width, img.height)
+                new_w = max(1, int(img.width * scale))
+                new_h = max(1, int(img.height * scale))
+                img = img.resize((new_w, new_h), Image.LANCZOS)
+
             img_w, img_h = img.size
 
             # Dimensiones de celda
