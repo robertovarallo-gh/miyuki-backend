@@ -15,6 +15,7 @@ import math
 import stripe
 import traceback
 import os
+import requests
 from typing import Tuple
 from rgb_palette import RGB_UNIVERSAL_COLORS, ColorInfo as ColorInfoRGB
 
@@ -1826,6 +1827,33 @@ def create_checkout_session():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+GA4_MEASUREMENT_ID = os.environ.get('GA4_MEASUREMENT_ID', 'G-91KCD5BCDG')
+GA4_API_SECRET = os.environ.get('GA4_API_SECRET')  # Crear en GA4 > Admin > Data Streams > Measurement Protocol API secrets
+
+def send_ga4_event(client_id, event_name, params=None):
+    """
+    Envía un evento a GA4 vía Measurement Protocol (server-side).
+    client_id: identificador del usuario (puede ser el email o un UUID; GA4 lo usa para agrupar sesiones).
+    No falla el flujo principal si GA4 no responde — solo loguea el error.
+    """
+    if not GA4_API_SECRET:
+        print("⚠️ GA4_API_SECRET no configurado — evento no enviado:", event_name)
+        return
+    try:
+        url = f"https://www.google-analytics.com/mp/collect?measurement_id={GA4_MEASUREMENT_ID}&api_secret={GA4_API_SECRET}"
+        payload = {
+            "client_id": client_id,
+            "events": [{
+                "name": event_name,
+                "params": params or {}
+            }]
+        }
+        resp = requests.post(url, json=payload, timeout=5)
+        print(f"📊 GA4 event '{event_name}' enviado — status {resp.status_code}")
+    except Exception as e:
+        print(f"⚠️ Error enviando evento GA4 '{event_name}': {e}")
+
+
 @app.route('/api/webhook', methods=['POST'])
 def stripe_webhook():
     payload = request.data
@@ -1885,6 +1913,22 @@ def stripe_webhook():
                         'purchasedAt': firestore.SERVER_TIMESTAMP,
                         'sessionId': session.get('id'),
                     })
+
+                    # 📊 GA4: evento de compra de patrón individual
+                    send_ga4_event(
+                        client_id=buyer_email,
+                        event_name='purchase',
+                        params={
+                            'transaction_id': session.get('id'),
+                            'value': (session.get('amount_total', 0) or 0) / 100,
+                            'currency': session.get('currency', 'usd').upper(),
+                            'items': [{
+                                'item_id': pattern_id,
+                                'item_name': pattern_name,
+                                'item_category': 'pattern_purchase'
+                            }]
+                        }
+                    )
 
                     # Registrar en usuario si tiene cuenta
                     users_ref = db.collection('users')
@@ -2049,6 +2093,22 @@ def stripe_webhook():
                         'subscriptionStatus': 'active'
                     })
                     print(f"✅ Usuario actualizado a Premium: {user_doc.id}")
+
+                    # 📊 GA4: evento de compra de suscripción
+                    send_ga4_event(
+                        client_id=customer_email,
+                        event_name='purchase',
+                        params={
+                            'transaction_id': session.get('id'),
+                            'value': (session.get('amount_total', 0) or 0) / 100,
+                            'currency': session.get('currency', 'usd').upper(),
+                            'items': [{
+                                'item_id': plan_type,
+                                'item_name': f'Easy Cuentas {plan_type}',
+                                'item_category': 'subscription'
+                            }]
+                        }
+                    )
                 else:
                     print(f"⚠️ Usuario no encontrado: {customer_email}")
 
