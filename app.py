@@ -27,9 +27,12 @@ if not STRIPE_SECRET_KEY:
     
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 
-# Price IDs
-STRIPE_PRICE_MONTHLY = 'price_1T2ZcF8hc5PM7463OHDxSErz'
-STRIPE_PRICE_YEARLY = 'price_1T2ZcF8hc5PM7463MDrONqhk'
+# Publishable key (no es secreta, pero centralizada aquí para no hardcodearla en el frontend)
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+
+# Price IDs (confirmados en Stripe Dashboard el 26/06/2026)
+STRIPE_PRICE_MONTHLY = os.environ.get('STRIPE_PRICE_MONTHLY', 'price_1T45eV6r7v0eroiuzzu2uchp')
+STRIPE_PRICE_YEARLY = os.environ.get('STRIPE_PRICE_YEARLY', 'price_1T45ff6r7v0eroiuiH3IOeqg')
 
 stripe.api_key = STRIPE_SECRET_KEY
 
@@ -1794,6 +1797,20 @@ def get_palette_endpoint():
         
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/stripe-config', methods=['GET'])
+def get_stripe_config():
+    """
+    Endpoint público — la publishable key NO es secreta (Stripe la diseñó para
+    vivir en el frontend), pero centralizarla aquí permite cambiar entre
+    test/live o actualizar Price IDs sin tocar el index.html.
+    """
+    return jsonify({
+        'publishableKey': STRIPE_PUBLISHABLE_KEY,
+        'priceMonthly': STRIPE_PRICE_MONTHLY,
+        'priceYearly': STRIPE_PRICE_YEARLY,
+    })
+
 
 @app.route('/api/create-checkout-session', methods=['POST'])
 def create_checkout_session():
