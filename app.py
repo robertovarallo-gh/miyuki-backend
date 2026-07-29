@@ -16,6 +16,7 @@ import stripe
 import traceback
 import os
 import requests
+import requests
 from typing import Tuple
 from rgb_palette import RGB_UNIVERSAL_COLORS, ColorInfo as ColorInfoRGB
 
@@ -28,6 +29,9 @@ if not STRIPE_SECRET_KEY:
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
 
 # Publishable key (no es secreta, pero centralizada aquí para no hardcodearla en el frontend)
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
+
+# Publishable key (no es secreta, pero centralizada para no hardcodearla en el frontend)
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY', '')
 
 # Price IDs (confirmados en Stripe Dashboard el 26/06/2026)
@@ -1595,6 +1599,9 @@ def generate_pattern():
         # Decode image
         image_bytes = base64.b64decode(image_data.split(',')[1])
         image = Image.open(io.BytesIO(image_bytes))
+        import hashlib
+        img_hash = hashlib.md5(image_bytes).hexdigest()[:8]
+        print(f"🔍 IMAGE HASH: {img_hash} | size: {image.size} | data_len: {len(image_data)}")
 
         # Calculate dimensions
         width_beads, height_beads = calculate_bead_dimensions(width_cm, height_cm, bead_width_mm, bead_height_mm)
