@@ -1602,6 +1602,10 @@ def generate_pattern():
         import hashlib
         img_hash = hashlib.md5(image_bytes).hexdigest()[:8]
         print(f"🔍 IMAGE HASH: {img_hash} | size: {image.size} | data_len: {len(image_data)}")
+        # Diagnóstico: colores de esquinas de la imagen recibida
+        _img_rgb = image.convert('RGB')
+        _w, _h = _img_rgb.size
+        print(f"🔍 IMG CORNERS: TL={_img_rgb.getpixel((0,0))} TR={_img_rgb.getpixel((_w-1,0))} BL={_img_rgb.getpixel((0,_h-1))} BR={_img_rgb.getpixel((_w-1,_h-1))} CENTER={_img_rgb.getpixel((_w//2,_h//2))}")
 
         # Calculate dimensions
         width_beads, height_beads = calculate_bead_dimensions(width_cm, height_cm, bead_width_mm, bead_height_mm)
