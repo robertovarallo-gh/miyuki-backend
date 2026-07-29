@@ -1621,6 +1621,14 @@ def generate_pattern():
             pattern = pixelate_image(image, width_beads, height_beads, num_colors,
                                     saturation, brightness, contrast, sharpness, color_mode)
         print(f"⏱️ pixelate_image: {time.time()-t0:.2f}s"); t1 = time.time()
+        # Diagnóstico: colores del patrón generado
+        import numpy as _np
+        _arr = _np.array(pattern.convert('RGB'))
+        _pixels = _arr.reshape(-1, 3)
+        _unique = len(set(map(tuple, _pixels.tolist())))
+        _corner = tuple(_arr[0][0].tolist())
+        _center = tuple(_arr[_arr.shape[0]//2][_arr.shape[1]//2].tolist())
+        print(f"🎨 PATTERN: {_unique} unique colors | corner={_corner} | center={_center} | shape={_arr.shape}")
 
         # Create pattern images
         if skip_quantization:
